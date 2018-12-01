@@ -1,6 +1,6 @@
 .idea
-data/**
+lithopia_server/data/**
 .credentials.json
-saved_images/
+lithopia_server/saved_images/
 __pycache__/
 *.sqlite3

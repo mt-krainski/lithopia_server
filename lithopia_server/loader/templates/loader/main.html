@@ -24,20 +24,45 @@
     </table>
 
     <img src="" id="myImg">
+
+    <div id="download_button"></div>
+    <div id="download_status"></div>
 </form>
 
 <script language="JavaScript">
 
-function hexToBase64(str) {
-    return btoa(String.fromCharCode.apply(null, str.replace(/\r|\n/g, "").replace(/([\da-fA-F]{2}) ?/g, "0x$1 ").replace(/ +$/, "").split(" ")));
+var lat = undefined;
+var lon = undefined;
+var cloudCover = undefined;
+
+function download(){
+    $.get('download_latest', {'lat': lat, 'lon': lon, 'cloud_cover':cloudCover})
+    setInterval(update_status, 100)
+}
+
+function double_to_percent(value){
+    return (value*100.0).toFixed(2) + "%"
+}
+
+function update_status(){
+    $.get('download_status', function(data, status){
+        status = document.getElementById("download_button")
+
+        status.innerHTML = double_to_percent(data)
+    });
 }
 
 function testResults (form) {
-    var lat = form.lat.value;
-    var lon = form.lon.value;
-    var cloudCover = form.cloud_cover.value;
+    lat = form.lat.value;
+    lon = form.lon.value;
+    cloudCover = form.cloud_cover.value;
 
     $('#myImg').attr('src', 'quicklook?lat='+lat+'&lon='+lon+'&cloud_cover='+cloudCover);
+
+    download_div = document.getElementById("download_button")
+
+    download_div.innerHTML = '<input type="button" value="download full set"' +
+            ' onclick="download()"/>';
 }
 </script>
 
