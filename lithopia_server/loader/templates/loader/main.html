@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sentinel 2 image loader</title>
+    <script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+</head>
+<body>
+
+<form action="">
+    <table>
+        <tr>
+            <td>Latitude</td>
+            <td>Longitude</td>
+            <td>Max cloud coverage</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td><input type="text" name="lat" value="50.12125"> </td>
+            <td><input type="text" name="lon" value="14.296335"> </td>
+            <td><input type="text" name="cloud_cover" value="10"> </td>
+            <td><input type="button" name="Button" Value="Get latest" onClick="testResults(this.form)"> </td>
+        </tr>
+    </table>
+
+    <img src="" id="myImg">
+</form>
+
+<script language="JavaScript">
+
+function hexToBase64(str) {
+    return btoa(String.fromCharCode.apply(null, str.replace(/\r|\n/g, "").replace(/([\da-fA-F]{2}) ?/g, "0x$1 ").replace(/ +$/, "").split(" ")));
+}
+
+function testResults (form) {
+    var lat = form.lat.value;
+    var lon = form.lon.value;
+    var cloudCover = form.cloud_cover.value;
+
+
+    $('#myImg').attr('src', 'quicklook?lat='+lat+'&lon='+lon+'&cloud_cover='+cloudCover);
+
+    //$.get('quicklook',
+    //      {'lat': lat, 'lon': lon, 'cloud_cover':cloudCover},
+    //      function(data, status){
+    //        console.log(data);
+    //        image = data;
+    //        console.log(image);
+    //        $('#myImg').attr('src', image);
+    //})
+}
+</script>
+
+</body>
+</html>
