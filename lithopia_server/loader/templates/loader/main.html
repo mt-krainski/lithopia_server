@@ -37,17 +37,7 @@ function testResults (form) {
     var lon = form.lon.value;
     var cloudCover = form.cloud_cover.value;
 
-
     $('#myImg').attr('src', 'quicklook?lat='+lat+'&lon='+lon+'&cloud_cover='+cloudCover);
-
-    //$.get('quicklook',
-    //      {'lat': lat, 'lon': lon, 'cloud_cover':cloudCover},
-    //      function(data, status){
-    //        console.log(data);
-    //        image = data;
-    //        console.log(image);
-    //        $('#myImg').attr('src', image);
-    //})
 }
 </script>
 
