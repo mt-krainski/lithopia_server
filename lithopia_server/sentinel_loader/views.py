@@ -1,9 +1,0 @@
-from django.shortcuts import render
-import sentinel2
-from django.template import loader
-from django.http import HttpResponse
-
-# Create your views here.
-def index(request):
-    template = loader.get_template('sentinel_loader/main.html')
-    return HttpResponse(template.render({}, request))

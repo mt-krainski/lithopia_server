@@ -1,0 +1,3 @@
+django
+django-background-tasks
+-e git+https://github.com/zlorf/django-dbsettings.git#egg=dbsettings
