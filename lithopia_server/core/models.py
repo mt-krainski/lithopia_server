@@ -1,12 +1,24 @@
+from builtins import set
+
 from django.db import models
 
 import dbsettings
+from background_task import background
+from sentinel2 import sentinel_requests
+import sentinel2.images as sentinel_images
+import sentinel2.transform as sentinel_transform
+import os
+import json
+import math
+import numpy as np
+import matplotlib.pyplot as plt
 
 class ApplicationSettings(dbsettings.Group):
     target_lat = dbsettings.FloatValue()
     target_lon = dbsettings.FloatValue()
     initial_download_size = dbsettings.PositiveIntegerValue()
     search_radius = dbsettings.FloatValue()
+    initial_download_running = dbsettings.BooleanValue(default=False)
 
 
 settings = ApplicationSettings("settings")
@@ -14,8 +26,132 @@ settings = ApplicationSettings("settings")
 
 class Dataset(models.Model):
     archive_path = models.TextField()
-    download_stamp = models.DateTimeField()
+    download_stamp = models.DateTimeField(auto_now_add=True)
     dataset_id = models.CharField(max_length=100)
     coords = models.TextField() # will store a JSON
     transformation = models.TextField() # will store a JSON
     wrapper = None
+
+    @staticmethod
+    @background(schedule=5)
+    def get_initial_set():
+        print("Getting initial data set")
+        try:
+            print(f"Current size: {Dataset.objects.count()}")
+            print(f"Getting: {settings.initial_download_size-Dataset.objects.count()} objects")
+            if Dataset.objects.count() < settings.initial_download_size:
+                if not settings.initial_download_running:
+                    settings.initial_download_running = True
+                    if settings.target_lat is not None and settings.target_lon is not None:
+                        location = (settings.target_lat, settings.target_lon)
+                        response = sentinel_requests.get_latest(location)
+                        entries = sentinel_requests.get_entries(response)
+                        for entry in entries:
+                            if not Dataset.objects.filter(dataset_id=entry['id']).exists():
+                                dataset_name = sentinel_requests.download(entry, True)
+                                archive_path = os.path.join(sentinel_requests.DATA_PATH, dataset_name+sentinel_requests.ARCHIVE_EXT)
+                                coords = sentinel_images.get_coordinates(sentinel_images.get_manifest(archive_path))
+                                image = sentinel_images.get_tci_image(archive_path)
+                                transormation = sentinel_transform.find_transform(
+                                        coords,
+                                        sentinel_transform.get_image_boundries(image, image.size)
+                                )
+                                db_entry = Dataset(
+                                    archive_path = archive_path,
+                                    dataset_id = entry['id'],
+                                    coords = json.dumps(coords),
+                                    transformation = json.dumps(transormation.tolist())
+                                )
+                                db_entry.save()
+                                if Dataset.objects.count() >= settings.initial_download_size:
+                                    break
+        finally:
+            settings.initial_download_running = False
+            Dataset.remove_non_referenced()
+
+
+    @staticmethod
+    def remove_non_referenced():
+        stored_files = os.listdir(sentinel_requests.DATA_PATH)
+        known_files = [item['archive_path'] for item in Dataset.objects.values('archive_path')]
+        files_to_remove = [file for file in stored_files if
+                           os.path.join(sentinel_requests.DATA_PATH, file) not in known_files]
+
+        for file in files_to_remove:
+            os.remove(os.path.join(sentinel_requests.DATA_PATH, file))
+
+    @staticmethod
+    def get_dataset_name(dataset):
+        return os.path.basename(dataset.archive_path).split(sentinel_requests.ARCHIVE_EXT)[0]
+
+
+class RequestImage(models.Model):
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
+    bounds = models.TextField()
+    detected = models.BooleanField()
+    image_path = models.CharField(max_length=1000)
+
+    IMAGES_DIR = 'request_images'
+    IMAGES_FORMAT = 'png'
+
+    @staticmethod
+    @background(schedule=10)
+    def process():
+        not_processed = Dataset.objects.filter(requestimage=None)
+        bounds = {
+            'upper': RequestImage.distance_to_lat_lon(
+                (settings.target_lon, settings.target_lat),
+                settings.search_radius,
+                math.radians(0))[1],
+            'lower': RequestImage.distance_to_lat_lon(
+                (settings.target_lon, settings.target_lat),
+                settings.search_radius,
+                math.radians(180))[1],
+            'right': RequestImage.distance_to_lat_lon(
+                (settings.target_lon, settings.target_lat),
+                settings.search_radius,
+                math.radians(90))[0],
+            'left': RequestImage.distance_to_lat_lon(
+                (settings.target_lon, settings.target_lat),
+                settings.search_radius,
+                math.radians(270))[0]
+        }
+
+        for dataset in not_processed:
+            t_function = sentinel_transform.transform_function(np.array(json.loads(dataset.transformation)))
+            image = sentinel_images.get_tci_image(dataset.archive_path)
+            cropped_image = sentinel_images.crop_by_coords(bounds, image, t_function)
+            name = Dataset.get_dataset_name(dataset) + '.' + RequestImage.IMAGES_FORMAT
+            if not os.path.exists(RequestImage.IMAGES_DIR):
+                os.makedirs(RequestImage.IMAGES_DIR)
+
+            path = os.path.join(RequestImage.IMAGES_DIR, name)
+            plt.imsave(path, cropped_image, format=RequestImage.IMAGES_FORMAT)
+
+            new_object = RequestImage(
+                dataset = dataset,
+                bounds = json.dumps(bounds),
+                detected = False,
+                image_path = path
+            )
+            new_object.save()
+
+
+    @staticmethod
+    def distance_to_lat_lon(initial_pos, distance, heading):
+        """
+
+        :param initial_pos: (lon, lat)
+        :param distance: distance traveled [km]
+        :param heading: direction of travel (CW from North) [rad]
+        :return: (lon, lat)
+        """
+        lon = math.radians(initial_pos[0])
+        lat = math.radians(initial_pos[1])
+        earth_radius = 6371
+        lat_final = math.asin(math.sin(lat) * math.cos(distance / earth_radius) +
+                       math.cos(lat) * math.sin(distance / earth_radius) * math.cos(heading))
+        lon_final = lon + math.atan2(math.sin(heading) * math.sin(distance / earth_radius) * math.cos(lat),
+                             math.cos(distance / earth_radius) - math.sin(lat) * math.sin(lat_final))
+
+        return math.degrees(lon_final), math.degrees(lat_final)

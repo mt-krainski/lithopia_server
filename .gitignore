@@ -2,5 +2,6 @@
 lithopia_server/data/**
 .credentials.json
 lithopia_server/saved_images/
+lithopia_server/request_images/
 __pycache__/
 *.sqlite3

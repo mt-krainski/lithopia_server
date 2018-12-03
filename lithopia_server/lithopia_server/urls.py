@@ -16,8 +16,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
+from core.models import Dataset, RequestImage
+
 urlpatterns = [
     path('loader/', include('loader.urls')),
     path('admin/', admin.site.urls),
     path('settings/', include('dbsettings.urls')),
 ]
+
+Dataset.get_initial_set()
+RequestImage.process()
