@@ -26,10 +26,12 @@ settings = ApplicationSettings("settings")
 
 class Dataset(models.Model):
     archive_path = models.TextField()
+    name = models.CharField(max_length=100, default=" ")
     download_stamp = models.DateTimeField(auto_now_add=True)
     dataset_id = models.CharField(max_length=100)
     coords = models.TextField() # will store a JSON
     transformation = models.TextField() # will store a JSON
+    acquisition_time = models.DateTimeField()
     wrapper = None
 
     @staticmethod
@@ -50,7 +52,9 @@ class Dataset(models.Model):
                             if not Dataset.objects.filter(dataset_id=entry['id']).exists():
                                 dataset_name = sentinel_requests.download(entry, True)
                                 archive_path = os.path.join(sentinel_requests.DATA_PATH, dataset_name+sentinel_requests.ARCHIVE_EXT)
-                                coords = sentinel_images.get_coordinates(sentinel_images.get_manifest(archive_path))
+                                manifest = sentinel_images.get_manifest(archive_path)
+                                time = sentinel_images.get_acquisition_time(manifest)
+                                coords = sentinel_images.get_coordinates(manifest)
                                 image = sentinel_images.get_tci_image(archive_path)
                                 transormation = sentinel_transform.find_transform(
                                         coords,
@@ -60,7 +64,9 @@ class Dataset(models.Model):
                                     archive_path = archive_path,
                                     dataset_id = entry['id'],
                                     coords = json.dumps(coords),
-                                    transformation = json.dumps(transormation.tolist())
+                                    transformation = json.dumps(transormation.tolist()),
+                                    acquisition_time=time,
+                                    name=dataset_name
                                 )
                                 db_entry.save()
                                 if Dataset.objects.count() >= settings.initial_download_size:
@@ -69,6 +75,20 @@ class Dataset(models.Model):
             settings.initial_download_running = False
             Dataset.remove_non_referenced()
 
+    @staticmethod
+    def populate_acquisition_time():
+        for dataset in Dataset.objects.all():
+            manifest = sentinel_images.get_manifest(dataset.archive_path)
+            time = sentinel_images.get_acquisition_time(manifest)
+            dataset.acquisition_time = time
+            dataset.save()
+
+    @staticmethod
+    def populate_dataset_name():
+        for dataset in Dataset.objects.all():
+            name = os.path.basename(dataset.archive_path).split('.')[0]
+            dataset.name = name
+            dataset.save()
 
     @staticmethod
     def remove_non_referenced():
@@ -83,6 +103,9 @@ class Dataset(models.Model):
     @staticmethod
     def get_dataset_name(dataset):
         return os.path.basename(dataset.archive_path).split(sentinel_requests.ARCHIVE_EXT)[0]
+
+    def __str__(self):
+        return self.name
 
 
 class RequestImage(models.Model):
@@ -155,3 +178,6 @@ class RequestImage(models.Model):
                              math.cos(distance / earth_radius) - math.sin(lat) * math.sin(lat_final))
 
         return math.degrees(lon_final), math.degrees(lat_final)
+
+    def __str__(self):
+        return self.dataset.name
