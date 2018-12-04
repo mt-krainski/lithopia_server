@@ -1,4 +1,5 @@
 from builtins import set
+from datetime import datetime
 
 from django.db import models
 
@@ -113,6 +114,7 @@ class RequestImage(models.Model):
     bounds = models.TextField()
     detected = models.BooleanField()
     image_path = models.CharField(max_length=1000)
+    processed_stamp = models.DateTimeField(default=datetime.now)
 
     IMAGES_DIR = 'request_images'
     IMAGES_FORMAT = 'png'
