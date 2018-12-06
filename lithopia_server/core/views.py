@@ -4,8 +4,6 @@ from django.http import HttpResponse
 from .models import RequestImage
 from PIL import Image
 import os
-from datetime import datetime
-
 from django.template import loader
 
 HTML_DATE_FORMAT = '%d.%m.%Y %H:%M:%S'

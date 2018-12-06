@@ -64,13 +64,15 @@ class Dataset(models.Model):
                                         coords,
                                         sentinel_transform.get_image_boundries(image, image.size)
                                 )
+                                cloud_cover = sentinel_images.get_cloud_cover(archive_path)
                                 db_entry = Dataset(
                                     archive_path = archive_path,
                                     dataset_id = entry['id'],
                                     coords = json.dumps(coords),
                                     transformation = json.dumps(transormation.tolist()),
                                     acquisition_time=time,
-                                    name=dataset_name
+                                    cloud_cover=cloud_cover,
+                                    name=dataset_name,
                                 )
                                 db_entry.save()
                             if Dataset.objects.count() >= settings.initial_download_size:
