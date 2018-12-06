@@ -25,5 +25,5 @@ urlpatterns = [
     path('summary/', include('core.urls'))
 ]
 
-Dataset.get_initial_set()
+Dataset.get_lastest()
 RequestImage.process()

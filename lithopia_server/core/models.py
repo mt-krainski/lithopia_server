@@ -13,6 +13,7 @@ import json
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+from time import sleep
 
 class ApplicationSettings(dbsettings.Group):
     target_lat = dbsettings.FloatValue()
@@ -33,16 +34,17 @@ class Dataset(models.Model):
     coords = models.TextField() # will store a JSON
     transformation = models.TextField() # will store a JSON
     acquisition_time = models.DateTimeField()
+    cloud_cover = models.FloatField(default=None, blank=True, null=True)
     wrapper = None
 
     @staticmethod
     @background(schedule=5)
-    def get_initial_set():
-        print("Getting initial data set")
+    def get_lastest():
+        print("Getting latest data set")
         try:
             print(f"Current size: {Dataset.objects.count()}")
             print(f"Getting: {settings.initial_download_size-Dataset.objects.count()} objects")
-            if Dataset.objects.count() < settings.initial_download_size:
+            while True:
                 if not settings.initial_download_running:
                     settings.initial_download_running = True
                     if settings.target_lat is not None and settings.target_lon is not None:
@@ -51,6 +53,7 @@ class Dataset(models.Model):
                         entries = sentinel_requests.get_entries(response)
                         for entry in entries:
                             if not Dataset.objects.filter(dataset_id=entry['id']).exists():
+                                print("Getting latest")
                                 dataset_name = sentinel_requests.download(entry, True)
                                 archive_path = os.path.join(sentinel_requests.DATA_PATH, dataset_name+sentinel_requests.ARCHIVE_EXT)
                                 manifest = sentinel_images.get_manifest(archive_path)
@@ -70,8 +73,12 @@ class Dataset(models.Model):
                                     name=dataset_name
                                 )
                                 db_entry.save()
-                                if Dataset.objects.count() >= settings.initial_download_size:
-                                    break
+                            if Dataset.objects.count() >= settings.initial_download_size:
+                                break
+                if Dataset.objects.count() >= settings.initial_download_size:
+                    break
+                sleep(10)
+
         finally:
             settings.initial_download_running = False
             Dataset.remove_non_referenced()
@@ -90,6 +97,14 @@ class Dataset(models.Model):
             name = os.path.basename(dataset.archive_path).split('.')[0]
             dataset.name = name
             dataset.save()
+
+    @staticmethod
+    def populate_cloud_cover():
+        for dataset in Dataset.objects.all():
+            cloud_cover = sentinel_images.get_cloud_cover(dataset.archive_path)
+            dataset.cloud_cover = cloud_cover
+            dataset.save()
+
 
     @staticmethod
     def remove_non_referenced():
@@ -123,6 +138,7 @@ class RequestImage(models.Model):
     @background(schedule=10)
     def process():
         not_processed = Dataset.objects.filter(requestimage=None)
+        print(f"Processing {len(not_processed)} images")
         bounds = {
             'upper': RequestImage.distance_to_lat_lon(
                 (settings.target_lon, settings.target_lat),

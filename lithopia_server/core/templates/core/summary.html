@@ -6,8 +6,48 @@
 </head>
 <body>
 
-<img src="get_image\{{ dataset_name }}" width="50%">
+<p align="center" style="font-family:verdana;">
+    Dataset: <b>{{ dataset_name }}</b>
+</p>
 
+<table border="0" width="100%">
+    <tr>
+        <td width="50%" align="center">
+            <img src="get_image\{{ dataset_name }}" style="width: 100%; max-width: 500px; margin: 20px" border="1px"> <br>
+            <button type="button" style="width: 10em; margin: 10px" onclick="moveBy(1)">Previous</button>
+            <button type="button" style="width: 10em; margin: 10px" onclick="moveBy(-1)">Next</button>
+        </td>
+        <td align="center" style="font-family:verdana;">
+            <p>Acquisition time: <br>
+                <b>{{ acquistion_time }}</b> </p>
+            <p>Time of processing: <br>
+                <b>{{ processed_time }}</b> </p>
+            <p>Cloud cover (for dataset): <br>
+                <b>{{ cloud_cover }}</b> </p>
+            <br><br>
+            <p>
+                {% if marker %}
+                <b>Marker detected!</b>
+                {% else %}
+                    Marker not detected
+                {% endif %}
+            </p>
 
+        </td>
+    </tr>
+</table>
+
+<script>
+    var id = {{ id }}
+    function moveBy(val) {
+        id += val;
+        console.log(id);
+        if(id>=0 && id<{{dataset_len}}) {
+            location.href = '/summary/'+id;
+        } else {
+            id -= val;
+        }
+    }
+</script>
 </body>
 </html>
