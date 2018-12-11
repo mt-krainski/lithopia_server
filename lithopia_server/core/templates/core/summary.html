@@ -25,7 +25,7 @@
                 <b>{{ processed_time }}</b> </p>
             <p>Cloud cover (for dataset): <br>
                 <b>{{ cloud_cover }}</b> </p>
-            <br><br>
+            <br>
             <p>
                 {% if marker %}
                 <b>Marker detected!</b>
@@ -33,17 +33,30 @@
                     Marker not detected
                 {% endif %}
             </p>
+            <br>
+            Difference to template: <br>
+            <img src="diff_image\{{ dataset_name }}" style="width: 10%; max-width: 50px;"> <br>
         </td>
     </tr>
     <tr>
         <td align="center" style="font-family:verdana; padding-top: 100px" >
             Histogarm of selection: <br>
             <img src="histogram\{{ dataset_name }}" style="width: 100%; max-width: 500px;"> <br>
-
         </td>
-        <td align="center" style="font-family:verdana; padding-top: 100px">
-            Difference to template: <br>
-            <img src="diff_image\{{ dataset_name }}" style="width: 10%; max-width: 50px;"> <br>
+        <td align="center" style="font-family:verdana; padding-left: 100px">
+            Selection metrics: <br>
+            <table>
+                <tr>
+                    <td align="right" width="50%"> Mean: </td><td align="left"><b>{{ metrics.mean|floatformat:1 }}</b></td>
+                </tr>
+                <tr>
+                    <td align="right" width="50%"> Standard deviation: </td><td align="left"><b>{{ metrics.std|floatformat:1 }}</b></td>
+                </tr>
+                <tr>
+                    <td align="right" width="50%"> Median: </td><td align="left"><b>{{ metrics.median|floatformat:1 }}</b></td>
+                </tr>
+            </table>
+            <br>
         </td>
     </tr>
 </table>
@@ -59,10 +72,6 @@
             id -= val;
         }
     }
-
-    $.get("histogram_metrics/{{ dataset_name }}", function( data ) {
-      console.log(data);
-    });
 
 </script>
 </body>

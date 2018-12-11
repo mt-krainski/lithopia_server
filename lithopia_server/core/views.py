@@ -24,8 +24,9 @@ def summary(request, id=0):
         'dataset_len': RequestImage.objects.count(),
         'acquistion_time': summary_object.dataset.acquisition_time.strftime(HTML_DATE_FORMAT),
         'processed_time': summary_object.processed_stamp.strftime(HTML_DATE_FORMAT),
-        'marker' : summary_object.detected,
+        'marker': summary_object.detected,
         'cloud_cover': f"{round(summary_object.dataset.cloud_cover, 2)} %",
+        'metrics': json.loads(summary_object.result_metrics)
     }, request))
 
 
@@ -95,34 +96,6 @@ def get_histogram(request, name):
 
     return response
 
-
-def get_histogram_metrics(request, name):
-    processed_item = RequestImage.objects.filter(dataset__name=name)[0]
-    image = Image.open(processed_item.image_path)
-    box = json.loads(settings.search_box)
-    bound_image = image.crop((
-        box[0][0],
-        box[0][1],
-        box[1][0],
-        box[1][1]))
-    hist = np.array(bound_image.histogram())
-    band_width = 256
-    hist_red = hist[0:band_width]
-    hist_green = hist[band_width:(2 * band_width)]
-    hist_blue = hist[(band_width * 2):(band_width * 3)]
-    hist_global = (hist_red + hist_green + hist_blue) / 3
-    log_hist = np.log(hist_global[hist_global!=0])
-    metrics = {
-        'mean': np.mean(hist_global),
-        'std': np.std(hist_global),
-        'median': np.median(hist_global),
-        'geo_mean': np.exp(log_hist.sum()/len(log_hist))
-    }
-
-    return HttpResponse(
-        json.dumps(metrics),
-        'application/json'
-    )
 
 def create_reference(request):
     ReferenceImage.create_reference_task()

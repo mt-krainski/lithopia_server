@@ -122,6 +122,7 @@ class RequestImage(models.Model):
     image_path = models.CharField(max_length=1000)
     cropped_diff_image_path = models.CharField(max_length=1000, default="")
     processed_stamp = models.DateTimeField(default=datetime.datetime.now)
+    result_metrics = models.TextField(default="") #json
 
     IMAGES_DIR = 'request_images'
     PROCESSED_DIR = os.path.join(IMAGES_DIR, "processed")
@@ -170,6 +171,7 @@ class RequestImage(models.Model):
             )
             new_object.save()
             new_object.diff_to_reference()
+            new_object.process_metrics()
 
 
     @staticmethod
@@ -234,6 +236,19 @@ class RequestImage(models.Model):
 
     def __str__(self):
         return self.dataset.name
+
+    def process_metrics(self):
+        image = cv2.imread(self.image_path)
+        bound_image = RequestImage.get_cropped_cv(image)
+        image_averaged = np.mean(bound_image, axis=2)
+        metrics = {
+            'mean': np.mean(image_averaged),
+            'std': np.std(image_averaged),
+            'median': np.median(image_averaged),
+            'geo_mean': np.exp(np.log(image_averaged).sum() / len(image_averaged))
+        }
+        self.result_metrics = json.dumps(metrics)
+        self.save()
 
 
 class ReferenceImage(models.Model):
