@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Request history</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 </head>
 <body>
 
@@ -32,7 +33,12 @@
                     Marker not detected
                 {% endif %}
             </p>
-
+        </td>
+    </tr>
+    <tr>
+        <td align="center" style="font-family:verdana; padding-top: 100px" >
+            Histogarm of selection: <br>
+            <img src="histogram\{{ dataset_name }}" style="width: 100%; max-width: 500px;"> <br>
         </td>
     </tr>
 </table>
