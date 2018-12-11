@@ -1,7 +1,7 @@
 from django.shortcuts import render
 
 from django.http import HttpResponse
-from .models import RequestImage, settings
+from .models import RequestImage, settings, ReferenceImage
 from PIL import Image, ImageDraw
 from io import BytesIO
 import os
@@ -84,3 +84,8 @@ def get_histogram(request, name):
     response = HttpResponse(png_output.getvalue(), content_type='image/png')
 
     return response
+
+
+def create_reference(request):
+    ReferenceImage.create_reference_image()
+    return HttpResponse("Processing request...")

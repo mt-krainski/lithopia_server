@@ -8,14 +8,18 @@ from background_task import background
 from sentinel2 import sentinel_requests
 import sentinel2.images as sentinel_images
 import sentinel2.transform as sentinel_transform
+from sentinel2 import image_analysis
 import os
 import json
 import math
 import numpy as np
 import matplotlib.pyplot as plt
 from time import sleep
+import cv2
+from django.contrib.admin.views.decorators import staff_member_required
 
 class ApplicationSettings(dbsettings.Group):
+    name = dbsettings.TextValue()
     target_lat = dbsettings.FloatValue()
     target_lon = dbsettings.FloatValue()
     initial_download_size = dbsettings.PositiveIntegerValue()
@@ -40,7 +44,7 @@ class Dataset(models.Model):
     wrapper = None
 
     @staticmethod
-    @background(schedule=5)
+    @background(schedule=1)
     def get_lastest():
         print("Getting latest data set")
         try:
@@ -108,7 +112,10 @@ class Dataset(models.Model):
 
 
 class RequestImage(models.Model):
-    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
+    dataset = models.OneToOneField(
+        Dataset,
+        on_delete=models.CASCADE,
+        primary_key=True)
     bounds = models.TextField()
     detected = models.BooleanField()
     image_path = models.CharField(max_length=1000)
@@ -118,7 +125,7 @@ class RequestImage(models.Model):
     IMAGES_FORMAT = 'png'
 
     @staticmethod
-    @background(schedule=10)
+    @background(schedule=1)
     def process():
         not_processed = Dataset.objects.filter(requestimage=None)
         print(f"Processing {len(not_processed)} images")
@@ -181,4 +188,58 @@ class RequestImage(models.Model):
 
     def __str__(self):
         return self.dataset.name
+
+
+class ReferenceImage(models.Model):
+    used_datasets = models.ManyToManyField(Dataset)
+    DIR = 'reference'
+    image_path = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, unique=True)
+
+    @staticmethod
+    @staff_member_required
+    @background(schedule=1)
+    def create_reference_image():
+        valid_datasets = Dataset.objects.filter(cloud_cover__lte=settings.cloud_cover_limit)
+        print(f"Creating reference from {len(valid_datasets)} datasets")
+        reference = valid_datasets[0]
+        reference_image = cv2.imread(reference.requestimage.image_path)
+        final_image = reference_image/len(valid_datasets)
+
+        for dataset in valid_datasets[1:]:
+            image = cv2.imread(dataset.requestimage.image_path)
+            offset = image_analysis.get_offset(reference_image, image)
+            print(f"offset: {offset}")
+            image_offset = image_analysis.offset_image(image, offset)
+            final_image = cv2.add(final_image, image_offset/len(valid_datasets))
+
+        print("Storing result")
+        if not os.path.exists(ReferenceImage.DIR):
+            os.makedirs(ReferenceImage.DIR)
+
+        image_path = os.path.join(ReferenceImage.DIR, f"{settings.name}.{RequestImage.IMAGES_FORMAT}")
+
+        cv2.imwrite(image_path, final_image)
+
+        existing = ReferenceImage.objects.filter(name=settings.name)
+
+        if existing:
+            existing[0].image_path = image_path
+            existing[0].used_datasets.clear()
+            for dataset in valid_datasets:
+                existing[0].used_datasets.add(dataset)
+        else:
+            reference_object = ReferenceImage(
+                image_path=image_path,
+                name=settings.name)
+            reference_object.save()
+            for dataset in valid_datasets:
+                reference_object.used_datasets.add(dataset)
+            reference_object.save()
+
+        print("Task Completed")
+
+    def __str__(self):
+        return self.name
+
 
