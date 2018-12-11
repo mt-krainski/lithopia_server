@@ -213,8 +213,9 @@ class RequestImage(models.Model):
 
         ref_image = cv2.imread(ref_item.image_path)
         self_image = cv2.imread(self.image_path)
-        offset = image_analysis.get_offset(ref_image, self_image)
-        self_image = image_analysis.offset_image(self_image, offset)
+        offset = image_analysis.get_offset(self_image, ref_image)
+        print(offset)
+        ref_image = image_analysis.offset_image(ref_image, offset)
         cropped_ref_image = RequestImage.get_cropped_cv(ref_image)
         cropped_self_image = RequestImage.get_cropped_cv(self_image)
         diff = image_analysis.get_image_difference(

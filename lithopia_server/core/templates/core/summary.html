@@ -39,6 +39,11 @@
         <td align="center" style="font-family:verdana; padding-top: 100px" >
             Histogarm of selection: <br>
             <img src="histogram\{{ dataset_name }}" style="width: 100%; max-width: 500px;"> <br>
+
+        </td>
+        <td align="center" style="font-family:verdana; padding-top: 100px">
+            Difference to template: <br>
+            <img src="diff_image\{{ dataset_name }}" style="width: 10%; max-width: 50px;"> <br>
         </td>
     </tr>
 </table>
@@ -54,6 +59,11 @@
             id -= val;
         }
     }
+
+    $.get("histogram_metrics/{{ dataset_name }}", function( data ) {
+      console.log(data);
+    });
+
 </script>
 </body>
 </html>
