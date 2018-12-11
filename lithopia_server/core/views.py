@@ -87,5 +87,5 @@ def get_histogram(request, name):
 
 
 def create_reference(request):
-    ReferenceImage.create_reference_image()
+    ReferenceImage.create_reference_task()
     return HttpResponse("Processing request...")

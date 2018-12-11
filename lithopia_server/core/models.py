@@ -1,6 +1,7 @@
 from builtins import set
 import datetime
 
+from PIL import Image
 from django.db import models
 
 import dbsettings
@@ -119,9 +120,11 @@ class RequestImage(models.Model):
     bounds = models.TextField()
     detected = models.BooleanField()
     image_path = models.CharField(max_length=1000)
+    cropped_diff_image_path = models.CharField(max_length=1000, default="")
     processed_stamp = models.DateTimeField(default=datetime.datetime.now)
 
     IMAGES_DIR = 'request_images'
+    PROCESSED_DIR = os.path.join(IMAGES_DIR, "processed")
     IMAGES_FORMAT = 'png'
 
     @staticmethod
@@ -166,6 +169,7 @@ class RequestImage(models.Model):
                 processed_stamp = datetime.datetime.now(datetime.timezone.utc)
             )
             new_object.save()
+            new_object.diff_to_reference()
 
 
     @staticmethod
@@ -186,6 +190,47 @@ class RequestImage(models.Model):
 
         return math.degrees(lon_final), math.degrees(lat_final)
 
+    @staticmethod
+    def get_cropped(image):
+        box = json.loads(settings.search_box)
+        return image.crop((box[0][0], box[0][1],
+                           box[1][0], box[1][1]))
+
+    @staticmethod
+    def get_cropped_cv(image):
+        box = json.loads(settings.search_box)
+        return image[box[0][1]:box[1][1], box[0][0]:box[1][0]]
+
+    def diff_to_reference(self):
+        ref_item = ReferenceImage.objects.filter(name=settings.name)
+        if not ref_item:
+            ReferenceImage.create_reference_image()
+            ref_item = ReferenceImage.objects.filter(name=settings.name)
+            if not ref_item:
+                raise ValueError("Unable to create reference image")
+
+        ref_item = ref_item[0]
+
+        ref_image = cv2.imread(ref_item.image_path)
+        self_image = cv2.imread(self.image_path)
+        offset = image_analysis.get_offset(ref_image, self_image)
+        self_image = image_analysis.offset_image(self_image, offset)
+        cropped_ref_image = RequestImage.get_cropped_cv(ref_image)
+        cropped_self_image = RequestImage.get_cropped_cv(self_image)
+        diff = image_analysis.get_image_difference(
+            cropped_ref_image,
+            cropped_self_image )
+
+        if not os.path.exists(RequestImage.PROCESSED_DIR):
+            os.makedirs(RequestImage.PROCESSED_DIR)
+
+        image_path = os.path.join(
+            RequestImage.PROCESSED_DIR,
+            f"{self.dataset.name}.{RequestImage.IMAGES_FORMAT}")
+        cv2.imwrite(image_path, diff)
+        self.cropped_diff_image_path = image_path
+        self.save()
+
     def __str__(self):
         return self.dataset.name
 
@@ -197,8 +242,6 @@ class ReferenceImage(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
     @staticmethod
-    @staff_member_required
-    @background(schedule=1)
     def create_reference_image():
         valid_datasets = Dataset.objects.filter(cloud_cover__lte=settings.cloud_cover_limit)
         print(f"Creating reference from {len(valid_datasets)} datasets")
@@ -238,6 +281,12 @@ class ReferenceImage(models.Model):
             reference_object.save()
 
         print("Task Completed")
+
+    @staticmethod
+    @staff_member_required
+    @background(schedule=1)
+    def create_reference_task():
+        ReferenceImage.create_reference_image()
 
     def __str__(self):
         return self.name
