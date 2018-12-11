@@ -1,5 +1,5 @@
 from builtins import set
-from datetime import datetime
+import datetime
 
 from django.db import models
 
@@ -21,9 +21,11 @@ class ApplicationSettings(dbsettings.Group):
     initial_download_size = dbsettings.PositiveIntegerValue()
     search_radius = dbsettings.FloatValue()
     initial_download_running = dbsettings.BooleanValue(default=False)
+    search_box = dbsettings.TextValue(default=None)
+    cloud_cover_limit = dbsettings.FloatValue(default=0.0)
 
 
-settings = ApplicationSettings("settings")
+settings = ApplicationSettings("Core")
 
 
 class Dataset(models.Model):
@@ -43,7 +45,8 @@ class Dataset(models.Model):
         print("Getting latest data set")
         try:
             print(f"Current size: {Dataset.objects.count()}")
-            print(f"Getting: {settings.initial_download_size-Dataset.objects.count()} objects")
+            if settings.initial_download_size < Dataset.objects.count():
+                print(f"Getting: {settings.initial_download_size-Dataset.objects.count()} objects")
             while True:
                 if not settings.initial_download_running:
                     settings.initial_download_running = True
@@ -131,7 +134,7 @@ class RequestImage(models.Model):
     bounds = models.TextField()
     detected = models.BooleanField()
     image_path = models.CharField(max_length=1000)
-    processed_stamp = models.DateTimeField(default=datetime.now)
+    processed_stamp = models.DateTimeField(default=datetime.datetime.now)
 
     IMAGES_DIR = 'request_images'
     IMAGES_FORMAT = 'png'
@@ -170,12 +173,12 @@ class RequestImage(models.Model):
 
             path = os.path.join(RequestImage.IMAGES_DIR, name)
             plt.imsave(path, cropped_image, format=RequestImage.IMAGES_FORMAT)
-
             new_object = RequestImage(
                 dataset = dataset,
                 bounds = json.dumps(bounds),
                 detected = False,
-                image_path = path
+                image_path = path,
+                processed_stamp = datetime.datetime.now(datetime.timezone.utc)
             )
             new_object.save()
 
@@ -183,7 +186,6 @@ class RequestImage(models.Model):
     @staticmethod
     def distance_to_lat_lon(initial_pos, distance, heading):
         """
-
         :param initial_pos: (lon, lat)
         :param distance: distance traveled [km]
         :param heading: direction of travel (CW from North) [rad]

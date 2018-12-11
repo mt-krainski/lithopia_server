@@ -1,10 +1,11 @@
 from django.shortcuts import render
 
 from django.http import HttpResponse
-from .models import RequestImage
-from PIL import Image
+from .models import RequestImage, settings
+from PIL import Image, ImageDraw
 import os
 from django.template import loader
+import json
 
 HTML_DATE_FORMAT = '%d.%m.%Y %H:%M:%S'
 
@@ -27,6 +28,9 @@ def get_image(request, name):
     file_path = os.path.join(RequestImage.IMAGES_DIR, name+"."+RequestImage.IMAGES_FORMAT)
     # with open() as image_file:
     image = Image.open(file_path)
+    drawer = ImageDraw.Draw(image)
+    search_box = tuple([tuple(val) for val in json.loads(settings.search_box)])
+    drawer.rectangle(search_box, outline='red')
     response = HttpResponse(content_type="image/"+RequestImage.IMAGES_FORMAT)
     image.save(response, RequestImage.IMAGES_FORMAT)
     return response
