@@ -88,28 +88,6 @@ class Dataset(models.Model):
             settings.initial_download_running = False
             Dataset.remove_non_referenced()
 
-    @staticmethod
-    def populate_acquisition_time():
-        for dataset in Dataset.objects.all():
-            manifest = sentinel_images.get_manifest(dataset.archive_path)
-            time = sentinel_images.get_acquisition_time(manifest)
-            dataset.acquisition_time = time
-            dataset.save()
-
-    @staticmethod
-    def populate_dataset_name():
-        for dataset in Dataset.objects.all():
-            name = os.path.basename(dataset.archive_path).split('.')[0]
-            dataset.name = name
-            dataset.save()
-
-    @staticmethod
-    def populate_cloud_cover():
-        for dataset in Dataset.objects.all():
-            cloud_cover = sentinel_images.get_cloud_cover(dataset.archive_path)
-            dataset.cloud_cover = cloud_cover
-            dataset.save()
-
 
     @staticmethod
     def remove_non_referenced():
