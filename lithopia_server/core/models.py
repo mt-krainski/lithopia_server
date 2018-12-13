@@ -34,6 +34,7 @@ class ApplicationSettings(dbsettings.Group):
     search_box = dbsettings.TextValue(default=None)
     cloud_cover_limit = dbsettings.FloatValue(default=0.0)
     barplot_z_limit = dbsettings.FloatValue(default=100.0)
+    match_threshold = dbsettings.FloatValue(default=30.0)
 
 
 settings = ApplicationSettings("Core")
@@ -127,11 +128,18 @@ class RequestImage(models.Model):
     detected = models.BooleanField()
     image_path = models.CharField(max_length=1000)
     cropped_diff_image_path = models.CharField(max_length=1000, default="")
+    histogram_path = models.CharField(max_length=1000, default="")
+    diff_summary_path = models.CharField(max_length=1000, default="")
+    marker_score_path = models.CharField(max_length=1000, default="")
     processed_stamp = models.DateTimeField(default=datetime.datetime.now)
-    result_metrics = models.TextField(default="") #json
+    statistic_metrics = models.TextField(default="") #json
+    template_match_score = models.FloatField(default=0)
 
     IMAGES_DIR = 'request_images'
-    PROCESSED_DIR = os.path.join(IMAGES_DIR, "processed")
+    PROCESSED_DIR = os.path.join(IMAGES_DIR, "processed_raw")
+    HISTOGRAM_DIR = os.path.join(IMAGES_DIR, "histogram")
+    DIFF_DIR = os.path.join(IMAGES_DIR, "processed")
+    MARKER_SCORE_DIR = os.path.join(IMAGES_DIR, "markers")
     IMAGES_FORMAT = 'png'
 
     @staticmethod
@@ -178,6 +186,7 @@ class RequestImage(models.Model):
             new_object.save()
             new_object.diff_to_reference()
             new_object.process_metrics()
+            new_object.process_histogram()
 
 
     @staticmethod
@@ -253,9 +262,38 @@ class RequestImage(models.Model):
             'median': np.median(image_averaged),
             'geo_mean': np.exp(np.log(image_averaged).sum() / len(image_averaged))
         }
-        self.result_metrics = json.dumps(metrics)
+        self.statistic_metrics = json.dumps(metrics)
         self.save()
 
+    def process_histogram(self):
+        hist_figure = self.histogram_plot()
+
+        if not os.path.exists(RequestImage.HISTOGRAM_DIR):
+            os.makedirs(RequestImage.HISTOGRAM_DIR)
+
+        image_path = os.path.join(
+            RequestImage.HISTOGRAM_DIR,
+            f"{self.dataset.name}.{RequestImage.IMAGES_FORMAT}")
+
+        hist_figure.savefig(image_path)
+        plt.close(hist_figure)
+        self.histogram_path = image_path
+        self.save()
+
+    def process_diff_plot(self):
+        diff_figure = self.diff_plot()
+
+        if not os.path.exists(RequestImage.DIFF_DIR):
+            os.makedirs(RequestImage.DIFF_DIR)
+
+        image_path = os.path.join(
+            RequestImage.DIFF_DIR,
+            f"{self.dataset.name}.{RequestImage.IMAGES_FORMAT}")
+
+        diff_figure.savefig(image_path)
+        plt.close(diff_figure)
+        self.diff_summary_path = image_path
+        self.save()
 
     @staticmethod
     def format_3d_barplot(ax):
@@ -272,6 +310,23 @@ class RequestImage(models.Model):
 
         ax.set_zlim(0, settings.barplot_z_limit)
 
+    @staticmethod
+    def make_3d_bar_plot(ax, data, color="blue", limit=None, format=False):
+        _x = range(0, data.shape[0])
+        _y = range(0, data.shape[1])
+        xx, yy = np.meshgrid(_x, _y)
+        x, y = xx.ravel(), yy.ravel()
+        data_r = data.ravel()
+        bottom = np.zeros_like(data_r)
+        if limit is not None:
+            data_r[data_r > limit] = limit
+
+        ax.bar3d(x, y, bottom, 1, 1, data_r, shade=True, color=color)
+
+        if format:
+            RequestImage.format_3d_barplot(ax)
+
+
     def diff_plot(self):
         image = cv2.imread(self.cropped_diff_image_path)
         fig = plt.figure(figsize=(12, 5))
@@ -282,29 +337,17 @@ class RequestImage(models.Model):
         plot_average = fig.add_subplot(gs[1, 1], projection='3d')
         plot_image = fig.add_subplot(gs[:, 2])
         ## todo: verify that the ravel procedure is necessary
-        _x = range(0, image.shape[0])
-        _y = range(0, image.shape[1])
-        xx, yy = np.meshgrid(_x, _y)
-        x, y = xx.ravel(), yy.ravel()
-        bars_red = image[:, :, 2].ravel()
-        bars_red[bars_red > settings.barplot_z_limit] = settings.barplot_z_limit
-        bars_green = image[:, :, 1].ravel()
-        bars_green[bars_green > settings.barplot_z_limit] = settings.barplot_z_limit
-        bars_blue = image[:, :, 0].ravel()
-        bars_blue[bars_blue > settings.barplot_z_limit] = settings.barplot_z_limit
-        bars_average = np.mean(image, axis=2).ravel()
-        bars_average[bars_average > settings.barplot_z_limit] = settings.barplot_z_limit
-        bottom = np.zeros_like(bars_red)  # red, green, blue should be the same
-        plot_red.bar3d(x, y, bottom, 1, 1, bars_red, shade=True, color='red')
-        plot_green.bar3d(x, y, bottom, 1, 1, bars_green, shade=True, color='green')
-        plot_blue.bar3d(x, y, bottom, 1, 1, bars_blue, shade=True, color='blue')
-        plot_average.bar3d(x, y, bottom, 1, 1, bars_average, shade=True, color='white')
+        self.make_3d_bar_plot(plot_red, image[:, :, 2],
+                              'red', settings.barplot_z_limit, True)
+        self.make_3d_bar_plot(plot_green, image[:, :, 1],
+                              'green', settings.barplot_z_limit, True)
+        self.make_3d_bar_plot(plot_blue, image[:, :, 0],
+                              'blue', settings.barplot_z_limit, True)
+        self.make_3d_bar_plot(plot_average, np.mean(image, axis=2),
+                              'white', settings.barplot_z_limit, True)
+
         plot_image.imshow(image[:, :, ::-1])
         plot_image.axis('off')
-        self.format_3d_barplot(plot_red)
-        self.format_3d_barplot(plot_green)
-        self.format_3d_barplot(plot_blue)
-        self.format_3d_barplot(plot_average)
 
         fig.subplots_adjust(
             left=0.05,
@@ -356,11 +399,59 @@ class RequestImage(models.Model):
 
         return fig
 
+    def process_marker_plot(self):
+        if not os.path.exists(RequestImage.MARKER_SCORE_DIR):
+            os.makedirs(RequestImage.MARKER_SCORE_DIR)
+
+        marker_score_figure = self.marker_plot()
+
+        image_path = os.path.join(
+            RequestImage.MARKER_SCORE_DIR,
+            f"{self.dataset.name}.{RequestImage.IMAGES_FORMAT}")
+
+        marker_score_figure.savefig(image_path)
+        plt.close(marker_score_figure)
+        self.marker_score_path = image_path
+        self.save()
+
+    def match_marker(self):
+        image = cv2.imread(self.cropped_diff_image_path)
+        template_path = ReferenceImage.objects.filter(name=settings.name)[0].marker_path
+        template = cv2.imread(template_path)[:, :, 0]
+        image_mean = np.mean(image, axis=2).astype(np.uint8)
+        image_mean.shape = image_mean.shape + (1, )
+
+        image_concatenated = np.append(image, image_mean, axis=2)
+
+        matching_result = []
+
+        for channel in range(image_concatenated.shape[-1]):
+            matching_result.append(cv2.matchTemplate(
+                    image_concatenated[:, :, channel],
+                    template, cv2.TM_CCOEFF))
+
+        self.template_match_score = np.max(matching_result)
+
+        return matching_result
+
+    def marker_plot(self):
+        marker_scores = self.match_marker()
+        subplots = [221, 222, 223, 224]
+        colors = ["blue", "green", "red", "white"]
+        fig = plt.figure(figsize=(8, 5))
+
+        for channel in range(4):
+            ax = fig.add_subplot(subplots[channel], projection='3d')
+            self.make_3d_bar_plot(ax, np.abs(marker_scores[channel]),
+                                  colors[channel], None, True)
+
+        return fig
 
 class ReferenceImage(models.Model):
     used_datasets = models.ManyToManyField(Dataset)
     DIR = 'reference'
-    image_path = models.CharField(max_length=100)
+    marker_path = models.CharField(max_length=1000, default="")
+    image_path = models.CharField(max_length=1000)
     name = models.CharField(max_length=100, unique=True)
 
     @staticmethod

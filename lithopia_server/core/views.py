@@ -28,7 +28,8 @@ def summary(request, id=0):
         'processed_time': summary_object.processed_stamp.strftime(HTML_DATE_FORMAT),
         'marker': summary_object.detected,
         'cloud_cover': f"{round(summary_object.dataset.cloud_cover, 2)} %",
-        'metrics': json.loads(summary_object.result_metrics)
+        'metrics': json.loads(summary_object.statistic_metrics),
+        'marker_score': summary_object.template_match_score
     }, request))
 
 
@@ -45,13 +46,23 @@ def get_image(request, name):
     return response
 
 
-def get_histogram(request, name):
-
+def get_special_image(request, image_type, name):
     processed_item = RequestImage.objects.filter(dataset__name=name)[0]
+    image_paths = {
+        'histogram': processed_item.histogram_path,
+        'diff': processed_item.diff_summary_path,
+        'marker_score': processed_item.marker_score_path
+    }
 
-    fig = processed_item.histogram_plot()
+    image_path = image_paths.get(image_type)
 
-    return png_response(fig)
+    if image_path is not None:
+        image = Image.open(image_path)
+        response = HttpResponse(content_type="image/" + RequestImage.IMAGES_FORMAT)
+        image.save(response, RequestImage.IMAGES_FORMAT)
+        return response
+    else:
+        return None
 
 
 def create_reference(request):
@@ -65,11 +76,3 @@ def png_response(fig):
     canvas.print_png(png_output)
 
     return HttpResponse(png_output.getvalue(), content_type='image/png')
-
-
-def get_diff_image(request, name):
-    processed_item = RequestImage.objects.filter(dataset__name=name)[0]
-
-    fig = processed_item.diff_plot()
-
-    return png_response(fig)

@@ -38,6 +38,8 @@
                 </tr>
             </table>
             <br>
+            Marker score: <br>
+            <b>{{ marker_score | floatformat:2  }}</b>
             <p>
                 {% if marker %}
                 <b>Marker detected!</b>
@@ -51,11 +53,18 @@
     <tr>
         <td align="center" valign="top" style="font-family:verdana; padding-top: 100px" >
             Histogarm of selection: <br>
-            <img src="histogram\{{ dataset_name }}" style="width: 90%; max-width: 500px; margin:5%"> <br>
+            <img src="special_image\histogram\{{ dataset_name }}" style="width: 90%; max-width: 500px; margin:5%"> <br>
         </td>
         <td align="center" valign="top" style="font-family:verdana; padding-top: 100px">
             Difference to template: <br>
-            <img src="diff_image\{{ dataset_name }}" style="width: 90%; max-width: 750px; margin:5%"> <br>
+            <img src="special_image\diff\{{ dataset_name }}" style="width: 90%; max-width: 750px; margin:5%"> <br>
+        </td>
+    </tr>
+    <tr>
+        <td></td>
+        <td align="center" valign="top" style="font-family:verdana; padding-top: 100px">
+            Marker correlation plot: <br>
+            <img src="special_image\marker_score\{{ dataset_name }}" style="width: 90%; max-width: 750px; margin:5%"> <br>
         </td>
     </tr>
 </table>
