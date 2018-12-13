@@ -4,6 +4,9 @@ import datetime
 from PIL import Image
 from django.db import models
 
+import matplotlib
+matplotlib.use('Agg')
+
 import dbsettings
 from background_task import background
 from sentinel2 import sentinel_requests
@@ -15,6 +18,8 @@ import json
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.gridspec as gridspec
 from time import sleep
 import cv2
 from django.contrib.admin.views.decorators import staff_member_required
@@ -28,6 +33,7 @@ class ApplicationSettings(dbsettings.Group):
     initial_download_running = dbsettings.BooleanValue(default=False)
     search_box = dbsettings.TextValue(default=None)
     cloud_cover_limit = dbsettings.FloatValue(default=0.0)
+    barplot_z_limit = dbsettings.FloatValue(default=100.0)
 
 
 settings = ApplicationSettings("Core")
@@ -249,6 +255,106 @@ class RequestImage(models.Model):
         }
         self.result_metrics = json.dumps(metrics)
         self.save()
+
+
+    @staticmethod
+    def format_3d_barplot(ax):
+        ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+        ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+        ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+        # make the grid lines transparent
+        ax.xaxis._axinfo["grid"]['color'] = (1, 1, 1, 0)
+        ax.yaxis._axinfo["grid"]['color'] = (1, 1, 1, 0)
+        ax.zaxis._axinfo["grid"]['color'] = (1, 1, 1, 0)
+
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+        ax.set_zlim(0, settings.barplot_z_limit)
+
+    def diff_plot(self):
+        image = cv2.imread(self.cropped_diff_image_path)
+        fig = plt.figure(figsize=(12, 5))
+        gs = gridspec.GridSpec(2, 3)
+        plot_red = fig.add_subplot(gs[0, 0], projection='3d')
+        plot_green = fig.add_subplot(gs[0, 1], projection='3d')
+        plot_blue = fig.add_subplot(gs[1, 0], projection='3d')
+        plot_average = fig.add_subplot(gs[1, 1], projection='3d')
+        plot_image = fig.add_subplot(gs[:, 2])
+        ## todo: verify that the ravel procedure is necessary
+        _x = range(0, image.shape[0])
+        _y = range(0, image.shape[1])
+        xx, yy = np.meshgrid(_x, _y)
+        x, y = xx.ravel(), yy.ravel()
+        bars_red = image[:, :, 2].ravel()
+        bars_red[bars_red > settings.barplot_z_limit] = settings.barplot_z_limit
+        bars_green = image[:, :, 1].ravel()
+        bars_green[bars_green > settings.barplot_z_limit] = settings.barplot_z_limit
+        bars_blue = image[:, :, 0].ravel()
+        bars_blue[bars_blue > settings.barplot_z_limit] = settings.barplot_z_limit
+        bars_average = np.mean(image, axis=2).ravel()
+        bars_average[bars_average > settings.barplot_z_limit] = settings.barplot_z_limit
+        bottom = np.zeros_like(bars_red)  # red, green, blue should be the same
+        plot_red.bar3d(x, y, bottom, 1, 1, bars_red, shade=True, color='red')
+        plot_green.bar3d(x, y, bottom, 1, 1, bars_green, shade=True, color='green')
+        plot_blue.bar3d(x, y, bottom, 1, 1, bars_blue, shade=True, color='blue')
+        plot_average.bar3d(x, y, bottom, 1, 1, bars_average, shade=True, color='white')
+        plot_image.imshow(image[:, :, ::-1])
+        plot_image.axis('off')
+        self.format_3d_barplot(plot_red)
+        self.format_3d_barplot(plot_green)
+        self.format_3d_barplot(plot_blue)
+        self.format_3d_barplot(plot_average)
+
+        fig.subplots_adjust(
+            left=0.05,
+            bottom=0.05,
+            right=0.95,
+            top=0.95,
+            wspace=0.05,
+            hspace=0.05)
+
+        return fig
+
+    def histogram_plot(self):
+        image = Image.open(self.image_path)
+        box = json.loads(settings.search_box)
+        bound_image = image.crop((
+            box[0][0],
+            box[0][1],
+            box[1][0],
+            box[1][1]))
+        hist = np.array(bound_image.histogram())
+        band_width = 256
+        fig = plt.figure()
+        fig.patch.set_visible(False)
+        N = 8
+
+        ax_red = fig.add_subplot(411)
+        hist_red = hist[0:band_width]
+        red_hist_plot = np.convolve(hist_red, np.ones((N,)) / N, mode='valid')
+        ax_red.plot(red_hist_plot, color='red')
+        ax_red.axis('off')
+
+        ax_green = fig.add_subplot(412)
+        hist_green = hist[band_width:(2 * band_width)]
+        green_hist_plot = np.convolve(hist_green, np.ones((N,)) / N, mode='valid')
+        ax_green.plot(green_hist_plot, color='green')
+        ax_green.axis('off')
+
+        ax_blue = fig.add_subplot(413)
+        hist_blue = hist[(band_width * 2):(band_width * 3)]
+        blue_hist_plot = np.convolve(hist_blue, np.ones((N,)) / N, mode='valid')
+        ax_blue.plot(blue_hist_plot, color='blue')
+        ax_blue.axis('off')
+
+        ax_blue = fig.add_subplot(414)
+        hist_global = (hist_red + hist_green + hist_blue) / 3
+        global_hist_plot = np.convolve(hist_global, np.ones((N,)) / N, mode='valid')
+        ax_blue.plot(global_hist_plot, color='black')
+        ax_blue.axis('off')
+
+        return fig
 
 
 class ReferenceImage(models.Model):
