@@ -22,7 +22,6 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.gridspec as gridspec
 from time import sleep
 import cv2
-from django.contrib.admin.views.decorators import staff_member_required
 
 class ApplicationSettings(dbsettings.Group):
     name = dbsettings.TextValue()
@@ -134,6 +133,7 @@ class RequestImage(models.Model):
     processed_stamp = models.DateTimeField(default=datetime.datetime.now)
     statistic_metrics = models.TextField(default="") #json
     template_match_score = models.FloatField(default=0)
+    diff_to_reference_score = models.TextField(default="") #json
 
     IMAGES_DIR = 'request_images'
     PROCESSED_DIR = os.path.join(IMAGES_DIR, "processed_raw")
@@ -184,9 +184,11 @@ class RequestImage(models.Model):
                 processed_stamp = datetime.datetime.now(datetime.timezone.utc)
             )
             new_object.save()
-            new_object.diff_to_reference()
             new_object.process_metrics()
             new_object.process_histogram()
+            new_object.diff_to_reference()
+            new_object.process_diff_plot()
+            new_object.process_marker_plot()
 
 
     @staticmethod
@@ -234,6 +236,8 @@ class RequestImage(models.Model):
         print(offset)
         ref_image = image_analysis.offset_image(ref_image, offset)
         cropped_ref_image = RequestImage.get_cropped_cv(ref_image)
+        # for ch in range(3):
+        #     cropped_ref_image[:, :, ch] -= np.min(cropped_ref_image[:, :, ch])
         cropped_self_image = RequestImage.get_cropped_cv(self_image)
         diff = image_analysis.get_image_difference(
             cropped_ref_image,
@@ -326,6 +330,19 @@ class RequestImage(models.Model):
         if format:
             RequestImage.format_3d_barplot(ax)
 
+
+    def get_diff_score(self):
+        image = cv2.imread(self.cropped_diff_image_path)
+        score_red = np.max(image[:, :, 2]) / np.mean(image[:, :, 2])
+        score_green = np.max(image[:, :, 1]) / np.mean(image[:, :, 1])
+        score_blue = np.max(image[:, :, 0]) / np.mean(image[:, :, 0])
+        image_mean = np.mean(image, axis=2)
+        score_mean = np.max(image_mean) / np.mean(image_mean)
+
+        self.diff_to_reference_score = json.dumps(
+            [score_red, score_green, score_blue, score_mean]
+        )
+        self.save()
 
     def diff_plot(self):
         image = cv2.imread(self.cropped_diff_image_path)
@@ -428,9 +445,10 @@ class RequestImage(models.Model):
         for channel in range(image_concatenated.shape[-1]):
             matching_result.append(cv2.matchTemplate(
                     image_concatenated[:, :, channel],
-                    template, cv2.TM_CCOEFF))
+                    template, cv2.TM_CCOEFF_NORMED))
 
-        self.template_match_score = np.max(matching_result)
+        self.template_match_score = \
+            np.max(np.abs(matching_result))/np.mean(np.abs(matching_result))
 
         return matching_result
 
@@ -443,7 +461,7 @@ class RequestImage(models.Model):
         for channel in range(4):
             ax = fig.add_subplot(subplots[channel], projection='3d')
             self.make_3d_bar_plot(ax, np.abs(marker_scores[channel]),
-                                  colors[channel], None, True)
+                                  colors[channel], None, False)
 
         return fig
 
@@ -494,9 +512,16 @@ class ReferenceImage(models.Model):
             reference_object.save()
 
         print("Task Completed")
+        print("Resetting scores")
+        for item in RequestImage.objects.all():
+            item.process_diff_plot()
+            item.get_diff_score()
+            item.diff_to_reference()
+            item.process_marker_plot()
+
+        print("Task Completed")
 
     @staticmethod
-    @staff_member_required
     @background(schedule=1)
     def create_reference_task():
         ReferenceImage.create_reference_image()

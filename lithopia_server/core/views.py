@@ -13,6 +13,8 @@ import os
 from django.template import loader
 import json
 from matplotlib.backends.backend_agg import FigureCanvasAgg
+from django.contrib.admin.views.decorators import staff_member_required
+
 
 HTML_DATE_FORMAT = '%d.%m.%Y %H:%M:%S'
 
@@ -29,7 +31,8 @@ def summary(request, id=0):
         'marker': summary_object.detected,
         'cloud_cover': f"{round(summary_object.dataset.cloud_cover, 2)} %",
         'metrics': json.loads(summary_object.statistic_metrics),
-        'marker_score': summary_object.template_match_score
+        'marker_score': summary_object.template_match_score,
+        'diff_score': json.loads(summary_object.diff_to_reference_score),
     }, request))
 
 
@@ -65,6 +68,7 @@ def get_special_image(request, image_type, name):
         return None
 
 
+@staff_member_required
 def create_reference(request):
     ReferenceImage.create_reference_task()
     return HttpResponse("Processing request...")
