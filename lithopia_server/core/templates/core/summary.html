@@ -14,7 +14,7 @@
 <table border="0" width="100%">
     <tr>
         <td width="50%" align="center">
-            <img src="get_image\{{ dataset_name }}" style="width: 100%; max-width: 500px; margin: 20px" border="1px"> <br>
+            <img src="get_image\{{ dataset_name }}" style="width: 90%; max-width: 500px; margin: 5%" border="1px"> <br>
             <button type="button" style="width: 10em; margin: 10px" onclick="moveBy(1)">Previous</button>
             <button type="button" style="width: 10em; margin: 10px" onclick="moveBy(-1)">Next</button>
         </td>
@@ -25,25 +25,6 @@
                 <b>{{ processed_time }}</b> </p>
             <p>Cloud cover (for dataset): <br>
                 <b>{{ cloud_cover }}</b> </p>
-            <br>
-            <p>
-                {% if marker %}
-                <b>Marker detected!</b>
-                {% else %}
-                    Marker not detected
-                {% endif %}
-            </p>
-            <br>
-            Difference to template: <br>
-            <img src="diff_image\{{ dataset_name }}" style="width: 10%; max-width: 50px;"> <br>
-        </td>
-    </tr>
-    <tr>
-        <td align="center" style="font-family:verdana; padding-top: 100px" >
-            Histogarm of selection: <br>
-            <img src="histogram\{{ dataset_name }}" style="width: 100%; max-width: 500px;"> <br>
-        </td>
-        <td align="center" style="font-family:verdana; padding-left: 100px">
             Selection metrics: <br>
             <table>
                 <tr>
@@ -57,6 +38,24 @@
                 </tr>
             </table>
             <br>
+            <p>
+                {% if marker %}
+                <b>Marker detected!</b>
+                {% else %}
+                    Marker not detected
+                {% endif %}
+            </p>
+
+        </td>
+    </tr>
+    <tr>
+        <td align="center" valign="top" style="font-family:verdana; padding-top: 100px" >
+            Histogarm of selection: <br>
+            <img src="histogram\{{ dataset_name }}" style="width: 90%; max-width: 500px; margin:5%"> <br>
+        </td>
+        <td align="center" valign="top" style="font-family:verdana; padding-top: 100px">
+            Difference to template: <br>
+            <img src="diff_image\{{ dataset_name }}" style="width: 90%; max-width: 750px; margin:5%"> <br>
         </td>
     </tr>
 </table>
