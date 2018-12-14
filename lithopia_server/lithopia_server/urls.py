@@ -27,3 +27,4 @@ urlpatterns = [
 
 Dataset.get_lastest()
 RequestImage.process()
+RequestImage.resubmit_failed()

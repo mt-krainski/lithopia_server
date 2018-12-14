@@ -455,6 +455,7 @@ class RequestImage(models.Model):
 
         if self.template_match_score > settings.match_threshold:
             self.detected = True
+            self.submit()
         else:
             self.detected = False
 
