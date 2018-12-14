@@ -5,6 +5,7 @@ from PIL import Image
 from django.db import models
 
 import matplotlib
+
 matplotlib.use('Agg')
 
 import dbsettings
@@ -34,6 +35,7 @@ class ApplicationSettings(dbsettings.Group):
     cloud_cover_limit = dbsettings.FloatValue(default=0.0)
     barplot_z_limit = dbsettings.FloatValue(default=100.0)
     match_threshold = dbsettings.FloatValue(default=30.0)
+    flag_color = dbsettings.TextValue(default='red')
 
 
 settings = ApplicationSettings("Core")
@@ -124,7 +126,8 @@ class RequestImage(models.Model):
         on_delete=models.CASCADE,
         primary_key=True)
     bounds = models.TextField()
-    detected = models.BooleanField()
+    detected = models.BooleanField(default=False)
+    submitted = models.BooleanField(default=False)
     image_path = models.CharField(max_length=1000)
     cropped_diff_image_path = models.CharField(max_length=1000, default="")
     histogram_path = models.CharField(max_length=1000, default="")
@@ -465,8 +468,22 @@ class RequestImage(models.Model):
         ax = fig.add_subplot(111, projection='3d')
         self.make_3d_bar_plot(ax, marker_scores,
                               color, None, True)
-
         return fig
+
+    def submit(self):
+        from core import lithopia_api
+        result = lithopia_api.post_flagcolor(
+            settings.flag_color,
+            self.dataset.name,
+        )
+        if result.status_code == 200:
+            self.submitted = True
+
+    @staticmethod
+    def resubmit_failed():
+        for item in RequestImage.objects.filter(submitted=False):
+            item.submit()
+
 
 class ReferenceImage(models.Model):
     used_datasets = models.ManyToManyField(Dataset)
