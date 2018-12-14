@@ -56,7 +56,7 @@ class Dataset(models.Model):
         print("Getting latest data set")
         try:
             print(f"Current size: {Dataset.objects.count()}")
-            if settings.initial_download_size < Dataset.objects.count():
+            if settings.initial_download_size > Dataset.objects.count():
                 print(f"Getting: {settings.initial_download_size-Dataset.objects.count()} objects")
             while True:
                 if not settings.initial_download_running:
@@ -220,6 +220,16 @@ class RequestImage(models.Model):
         box = json.loads(settings.search_box)
         return image[box[0][1]:box[1][1], box[0][0]:box[1][0]]
 
+    @staticmethod
+    def normlize_cv_image(image):
+        for ch in range(3):
+            image[:, :, ch] -= np.min(image[:, :, ch])
+            image[:, :, ch] = \
+                (255 * image[:, :, ch].astype(np.float64)
+                 / np.max(image[:, :, ch])).astype(np.uint8)
+
+        return image
+
     def diff_to_reference(self):
         ref_item = ReferenceImage.objects.filter(name=settings.name)
         if not ref_item:
@@ -236,9 +246,8 @@ class RequestImage(models.Model):
         print(offset)
         ref_image = image_analysis.offset_image(ref_image, offset)
         cropped_ref_image = RequestImage.get_cropped_cv(ref_image)
-        # for ch in range(3):
-        #     cropped_ref_image[:, :, ch] -= np.min(cropped_ref_image[:, :, ch])
         cropped_self_image = RequestImage.get_cropped_cv(self_image)
+
         diff = image_analysis.get_image_difference(
             cropped_ref_image,
             cropped_self_image )
@@ -300,7 +309,7 @@ class RequestImage(models.Model):
         self.save()
 
     @staticmethod
-    def format_3d_barplot(ax):
+    def format_3d_barplot(ax, barplot_limit=None):
         ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
         ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
         ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
@@ -311,8 +320,8 @@ class RequestImage(models.Model):
 
         ax.set_xticks([])
         ax.set_yticks([])
-
-        ax.set_zlim(0, settings.barplot_z_limit)
+        if barplot_limit is not None:
+            ax.set_zlim(0, barplot_limit)
 
     @staticmethod
     def make_3d_bar_plot(ax, data, color="blue", limit=None, format=False):
@@ -328,7 +337,7 @@ class RequestImage(models.Model):
         ax.bar3d(x, y, bottom, 1, 1, data_r, shade=True, color=color)
 
         if format:
-            RequestImage.format_3d_barplot(ax)
+            RequestImage.format_3d_barplot(ax, limit)
 
 
     def get_diff_score(self):
@@ -434,34 +443,28 @@ class RequestImage(models.Model):
     def match_marker(self):
         image = cv2.imread(self.cropped_diff_image_path)
         template_path = ReferenceImage.objects.filter(name=settings.name)[0].marker_path
-        template = cv2.imread(template_path)[:, :, 0]
-        image_mean = np.mean(image, axis=2).astype(np.uint8)
-        image_mean.shape = image_mean.shape + (1, )
+        template = cv2.imread(template_path)
 
-        image_concatenated = np.append(image, image_mean, axis=2)
+        matching_result = cv2.matchTemplate(image, template,
+                                            cv2.TM_CCORR_NORMED)
 
-        matching_result = []
+        self.template_match_score = np.max(matching_result)
 
-        for channel in range(image_concatenated.shape[-1]):
-            matching_result.append(cv2.matchTemplate(
-                    image_concatenated[:, :, channel],
-                    template, cv2.TM_CCOEFF_NORMED))
-
-        self.template_match_score = \
-            np.max(np.abs(matching_result))/np.mean(np.abs(matching_result))
+        if self.template_match_score > settings.match_threshold:
+            self.detected = True
+        else:
+            self.detected = False
 
         return matching_result
 
     def marker_plot(self):
         marker_scores = self.match_marker()
-        subplots = [221, 222, 223, 224]
-        colors = ["blue", "green", "red", "white"]
-        fig = plt.figure(figsize=(8, 5))
+        color = 'white'
+        fig = plt.figure(figsize=(5, 5))
 
-        for channel in range(4):
-            ax = fig.add_subplot(subplots[channel], projection='3d')
-            self.make_3d_bar_plot(ax, np.abs(marker_scores[channel]),
-                                  colors[channel], None, False)
+        ax = fig.add_subplot(111, projection='3d')
+        self.make_3d_bar_plot(ax, marker_scores,
+                              color, None, True)
 
         return fig
 
@@ -514,9 +517,9 @@ class ReferenceImage(models.Model):
         print("Task Completed")
         print("Resetting scores")
         for item in RequestImage.objects.all():
+            item.diff_to_reference()
             item.process_diff_plot()
             item.get_diff_score()
-            item.diff_to_reference()
             item.process_marker_plot()
 
         print("Task Completed")
