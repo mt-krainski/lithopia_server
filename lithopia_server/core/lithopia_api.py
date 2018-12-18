@@ -1,6 +1,5 @@
 
 import requests
-from datetime import datetime
 from core.models import settings
 
 FLAG_COLOR = "flagColor"
