@@ -36,9 +36,11 @@ class ApplicationSettings(dbsettings.Group):
     barplot_z_limit = dbsettings.FloatValue(default=100.0)
     match_threshold = dbsettings.FloatValue(default=30.0)
     flag_color = dbsettings.TextValue(default='red')
+    place = dbsettings.TextValue(default='balcony')
 
 
 settings = ApplicationSettings("Core")
+
 
 
 class Dataset(models.Model):
@@ -53,7 +55,6 @@ class Dataset(models.Model):
     wrapper = None
 
     @staticmethod
-    @background(schedule=1)
     def get_lastest():
         print("Getting latest data set")
         try:
@@ -146,7 +147,6 @@ class RequestImage(models.Model):
     IMAGES_FORMAT = 'png'
 
     @staticmethod
-    @background(schedule=1)
     def process():
         not_processed = Dataset.objects.filter(requestimage=None)
         print(f"Processing {len(not_processed)} images")
@@ -191,6 +191,7 @@ class RequestImage(models.Model):
             new_object.process_histogram()
             new_object.diff_to_reference()
             new_object.process_diff_plot()
+            new_object.get_diff_score()
             new_object.process_marker_plot()
 
 
@@ -476,6 +477,7 @@ class RequestImage(models.Model):
         result = lithopia_api.post_flagcolor(
             settings.flag_color,
             self.dataset.name,
+            place=settings.place
         )
         if result.status_code == 200:
             self.submitted = True
@@ -551,3 +553,8 @@ class ReferenceImage(models.Model):
         return self.name
 
 
+@background(schedule=1)
+def update_datasets():
+    Dataset.get_lastest()
+    RequestImage.process()
+    RequestImage.resubmit_failed()

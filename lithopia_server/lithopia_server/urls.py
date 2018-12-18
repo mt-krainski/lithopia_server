@@ -13,10 +13,11 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from background_task.models import Task
 from django.contrib import admin
 from django.urls import include, path
 
-from core.models import Dataset, RequestImage
+from core.models import update_datasets
 
 urlpatterns = [
     path('loader/', include('loader.urls')),
@@ -25,6 +26,4 @@ urlpatterns = [
     path('summary/', include('core.urls'))
 ]
 
-Dataset.get_lastest()
-RequestImage.process()
-RequestImage.resubmit_failed()
+update_datasets(repeat=Task.HOURLY)
