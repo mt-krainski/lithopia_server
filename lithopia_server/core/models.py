@@ -476,7 +476,6 @@ class RequestImage(models.Model):
         from core import lithopia_api
         result = lithopia_api.post_flagcolor(
             settings.flag_color,
-            self.dataset.name,
             place=settings.place
         )
         if result.status_code == 200:
