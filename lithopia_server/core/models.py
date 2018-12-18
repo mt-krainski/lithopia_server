@@ -478,12 +478,14 @@ class RequestImage(models.Model):
             settings.flag_color,
             place=settings.place
         )
+
         if result.status_code == 200:
             self.submitted = True
+            self.save()
 
     @staticmethod
     def resubmit_failed():
-        for item in RequestImage.objects.filter(submitted=False):
+        for item in RequestImage.objects.filter(submitted=False, detected=True):
             item.submit()
 
 
