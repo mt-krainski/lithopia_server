@@ -23,6 +23,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.gridspec as gridspec
 from time import sleep
 import cv2
+from background_task.models import Task
 
 class ApplicationSettings(dbsettings.Group):
     name = dbsettings.TextValue()
@@ -554,9 +555,13 @@ class ReferenceImage(models.Model):
     def __str__(self):
         return self.name
 
+@background(schedule=0)
+def update_datasets():
+    if not Task.objects.filter(task_name='core.models.perform_update'):
+        perform_update(repeat=Task.HOURLY)
 
 @background(schedule=1)
-def update_datasets():
+def perform_update():
     Dataset.get_lastest()
     RequestImage.process()
     RequestImage.resubmit_failed()

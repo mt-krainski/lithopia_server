@@ -26,4 +26,4 @@ urlpatterns = [
     path('summary/', include('core.urls'))
 ]
 
-update_datasets(repeat=Task.HOURLY)
+update_datasets()
