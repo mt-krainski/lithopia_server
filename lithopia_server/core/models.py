@@ -1,4 +1,3 @@
-from builtins import set
 import datetime
 
 from PIL import Image
@@ -19,11 +18,10 @@ import json
 import math
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.gridspec as gridspec
 from time import sleep
 import cv2
-from background_task.models import Task
+
 
 class ApplicationSettings(dbsettings.Group):
     name = dbsettings.TextValue()
@@ -38,6 +36,7 @@ class ApplicationSettings(dbsettings.Group):
     match_threshold = dbsettings.FloatValue(default=30.0)
     flag_color = dbsettings.TextValue(default='red')
     place = dbsettings.TextValue(default='balcony')
+    update_task_timeout = dbsettings.DurationValue(default=datetime.timedelta(minutes=30))
 
 
 settings = ApplicationSettings("Core")
@@ -554,14 +553,3 @@ class ReferenceImage(models.Model):
 
     def __str__(self):
         return self.name
-
-@background(schedule=0)
-def update_datasets():
-    if not Task.objects.filter(task_name='core.models.perform_update'):
-        perform_update(repeat=Task.HOURLY)
-
-@background(schedule=1)
-def perform_update():
-    Dataset.get_lastest()
-    RequestImage.process()
-    RequestImage.resubmit_failed()

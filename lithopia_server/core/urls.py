@@ -8,4 +8,6 @@ urlpatterns = [
     path('get_image/<str:name>', views.get_image, name='get_image'),
     path('special_image/<str:image_type>/<str:name>', views.get_special_image, name='special_image'),
     path('create_reference', views.create_reference, name='create_reference'),
+    path('check_update_scheduled', views.check_update_scheduled, name='check_update_scheduled'),
+    path('reset_update_scheduled', views.reset_update_scheduled, name='reset_updater'),
 ]

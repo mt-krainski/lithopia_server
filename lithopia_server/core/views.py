@@ -1,8 +1,14 @@
+from datetime import datetime
+
 import cv2
 
 from django.shortcuts import render
 
 import matplotlib
+from pytz import utc
+
+from core.tasks import UPDATE_TASK_NAME, update_datasets
+
 matplotlib.use('Agg')
 
 from django.http import HttpResponse
@@ -14,7 +20,7 @@ from django.template import loader
 import json
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from django.contrib.admin.views.decorators import staff_member_required
-
+from background_task.models import Task
 
 HTML_DATE_FORMAT = '%d.%m.%Y %H:%M:%S'
 
@@ -80,3 +86,39 @@ def png_response(fig):
     canvas.print_png(png_output)
 
     return HttpResponse(png_output.getvalue(), content_type='image/png')
+
+
+def check_update_scheduled(request):
+    result = {
+        'check_update_scheduled' : None
+    }
+
+    tasks = Task.objects.filter(task_name=UPDATE_TASK_NAME)
+
+    if tasks:
+        perform_update_task = tasks[0]
+
+        if not perform_update_task.locked_at:
+            result['check_update_scheduled'] = True
+        else:
+            now = datetime.now()
+            now = now.replace(tzinfo=utc)
+            timediff = now - perform_update_task.locked_at
+
+            if timediff > settings.update_task_timeout:
+                result['check_update_scheduled'] = False
+            else:
+                result['check_update_scheduled'] = True
+    else:
+        result['check_update_scheduled'] = False
+
+    return HttpResponse(json.dumps(result), content_type='application/json')
+
+
+def reset_update_scheduled(request):
+    for task in Task.objects.filter(task_name=UPDATE_TASK_NAME):
+        task.delete()
+
+    update_datasets()
+
+    return HttpResponse("OK")

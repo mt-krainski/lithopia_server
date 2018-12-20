@@ -17,7 +17,7 @@ from background_task.models import Task
 from django.contrib import admin
 from django.urls import include, path
 
-from core.models import update_datasets
+from core.tasks import update_datasets
 
 urlpatterns = [
     path('loader/', include('loader.urls')),
