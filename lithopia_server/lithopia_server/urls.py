@@ -13,11 +13,11 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from background_task.models import Task
+
 from django.contrib import admin
 from django.urls import include, path
 
-from core.tasks import update_datasets
+from core.tasks import add_update_task
 
 urlpatterns = [
     path('loader/', include('loader.urls')),
@@ -26,4 +26,4 @@ urlpatterns = [
     path('summary/', include('core.urls'))
 ]
 
-update_datasets()
+add_update_task()
