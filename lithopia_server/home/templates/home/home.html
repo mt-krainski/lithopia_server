@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lithopia Server Home</title>
+    <h1>
+        Lithopia Server
+    </h1>
+    <table width="100%">
+        <tr>
+            <td width="25%">
+                <a href="/admin">Admin</a>
+            </td>
+            <td width="25%">
+                <a href="/settings">Settings</a>
+            </td>
+            <td width="25%">
+                <a href="/summary">Summary</a>
+            </td>
+            <td width="25%">
+                <a href="#">Acquisition</a>
+            </td>
+        </tr>
+    </table>
+    <p>
+        Registered {{ datasets_len }} datasets
+    </p>
+    <p>
+        Processed {{ processed_len }}/{{ datasets_len }} datasets ({{ processed_ratio | floatformat:.2 }}%)
+    </p>
+    <p>
+        Marker detected on {{ detected_len }} images (last on: {{ detected_last_stamp }})
+    </p>
+</head>
+<body>
+
+</body>
+</html>

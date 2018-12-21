@@ -40,7 +40,8 @@ INSTALLED_APPS = [
     'dbsettings',
     'loader',
     'core',
-    'background_task'
+    'background_task',
+    'home',
 ]
 
 MIDDLEWARE = [
