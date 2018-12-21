@@ -20,7 +20,8 @@ from django.urls import include, path
 from core.tasks import add_update_task
 
 urlpatterns = [
-    path('loader/', include('loader.urls')),
+    path('/', include('home.urls')),
+    # path('loader/', include('loader.urls')),
     path('admin/', admin.site.urls),
     path('settings/', include('dbsettings.urls')),
     path('summary/', include('core.urls'))
