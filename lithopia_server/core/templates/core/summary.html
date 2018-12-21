@@ -48,7 +48,12 @@
             </p>
             <p>
                 {% if marker %}
-                <b>Marker detected!</b>
+                    <b>Marker detected!</b>
+                    {% if submitted %}
+                        <br><i>Detection submitted</i>
+                    {% else %}
+                        <br><i>Detection not submitted</i>
+                    {% endif %}
                 {% else %}
                     Marker not detected
                 {% endif %}

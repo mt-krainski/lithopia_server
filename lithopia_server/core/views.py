@@ -35,6 +35,7 @@ def summary(request, id=0):
         'acquistion_time': summary_object.dataset.acquisition_time.strftime(HTML_DATE_FORMAT),
         'processed_time': summary_object.processed_stamp.strftime(HTML_DATE_FORMAT),
         'marker': summary_object.detected,
+        'submitted': summary_object.submitted,
         'cloud_cover': f"{round(summary_object.dataset.cloud_cover, 2)} %",
         'metrics': json.loads(summary_object.statistic_metrics),
         'marker_score': summary_object.template_match_score,

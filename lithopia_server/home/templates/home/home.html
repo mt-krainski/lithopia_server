@@ -3,6 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>Lithopia Server Home</title>
+    <style>
+    body {font-family:verdana;}
+    </style>
+</head>
+<body>
     <h1>
         Lithopia Server
     </h1>
@@ -26,13 +31,11 @@
         Registered {{ datasets_len }} datasets
     </p>
     <p>
-        Processed {{ processed_len }}/{{ datasets_len }} datasets ({{ processed_ratio | floatformat:.2 }}%)
+        Processed {{ processed_len }}/{{ datasets_len }} datasets ({{ processed_ratio | floatformat:2 }}%)
     </p>
     <p>
         Marker detected on {{ detected_len }} images (last on: {{ detected_last_stamp }})
     </p>
-</head>
-<body>
 
 </body>
 </html>
