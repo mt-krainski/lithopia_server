@@ -32,14 +32,14 @@ class Command(BaseCommand):
 
         process_tasks = self.get_process_tasks()
 
-        if options['reset']:
-            process_tasks.kill()
-
         if options['reset'] or not process_tasks:
+            if process_tasks:
+                process_tasks.kill()
+
             tasks.clean_perform_update()
-            subprocess.Popen([
-                sys.executable, MANAGE_SCRIPT, PROCESS_TASKS
-            ])
+            subprocess.Popen(
+                [sys.executable, MANAGE_SCRIPT, PROCESS_TASKS],
+            )
 
         tasks.add_update_task()
 
