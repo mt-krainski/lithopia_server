@@ -6,5 +6,5 @@ from .models import Acquisition
 # Create your views here.
 
 def acquisition_page(request):
-    Acquisition.update_acquisition_table()
+    # Acquisition.update_acquisition_table()
     return HttpResponse("OK")
