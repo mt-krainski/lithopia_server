@@ -32,6 +32,11 @@ class Command(BaseCommand):
 
         process_tasks = self.get_process_tasks()
 
+        if options['kill'] and process_tasks:
+            process_tasks.kill()
+            tasks.clean_perform_update()
+            return
+
         if options['reset'] or not process_tasks:
             if process_tasks:
                 process_tasks.kill()
