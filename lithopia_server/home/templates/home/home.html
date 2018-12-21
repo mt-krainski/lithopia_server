@@ -13,20 +13,27 @@
     </h1>
     <table width="100%">
         <tr>
-            <td width="25%">
+            <td width="20%">
                 <a href="/admin">Admin</a>
             </td>
-            <td width="25%">
+            <td width="20%">
                 <a href="/settings">Settings</a>
             </td>
-            <td width="25%">
+            <td width="20%">
                 <a href="/summary">Summary</a>
             </td>
-            <td width="25%">
+            <td width="20%">
                 <a href="#">Acquisition</a>
+            </td>
+            <td width="20%">
+                <a href="/sentinel_credentials">Set Copernicus credentials</a>
             </td>
         </tr>
     </table>
+    <br><br>
+    <p>
+        Target location: {{ lat }}, {{ lon }}
+    </p>
     <p>
         Registered {{ datasets_len }} datasets
     </p>

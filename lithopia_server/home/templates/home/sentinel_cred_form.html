@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Update Copernicus Credentials</title>
+    <style>
+    body {font-family:verdana;}
+    </style>
+</head>
+<body>
+
+<form action="{% url 'update_sentinel_credentials' %}" method="post">
+{% csrf_token %}
+    Username:<br>
+    <input type="text" name="{{ username_tag }}">
+    <br>
+    Password:<br>
+    <input type="password" name="{{ password_tag }}">
+    <br><br>
+    <input type="submit" value="Submit">
+
+</form>
+
+</body>
+</html>
