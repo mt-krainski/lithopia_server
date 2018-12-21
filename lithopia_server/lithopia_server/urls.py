@@ -24,7 +24,8 @@ urlpatterns = [
     # path('loader/', include('loader.urls')),
     path('admin/', admin.site.urls),
     path('settings/', include('dbsettings.urls')),
-    path('summary/', include('core.urls'))
+    path('summary/', include('core.urls')),
+    path('acquisition/', include('acquisition.urls'))
 ]
 
 add_update_task()

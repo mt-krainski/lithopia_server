@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'core',
     'background_task',
     'home',
+    'acquisition',
 ]
 
 MIDDLEWARE = [
