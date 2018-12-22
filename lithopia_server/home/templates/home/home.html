@@ -79,12 +79,12 @@
                 document.getElementById("next_acq").innerHTML =
                                "<b>Next acquisition</b>: " + earliestAcquisition.toUTCString() + " " +
                                "(in " + (days>0 ? days + "d ": "") +
-                               (hours>0 ? hours + "h ": "") +
-                               (minutes>0 ? minutes + "m ": "") +
+                               (days>0 || hours>0 ? hours + "h ": "") +
+                               (days>0 || hours>0 || minutes>0 ? minutes + "m ": "") +
                                seconds + "s)";
 
             }
-        }, 1000)
+        }, 100)
     </script>
 
 </body>
