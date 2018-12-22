@@ -26,6 +26,8 @@ def earliest(request):
         .order_by('observation_time_start')[0]
 
     return HttpResponse(
-        json.dumps(earliest.observation_time_start, default=datetime_parser),
+        json.dumps(
+            {'earliest': earliest.observation_time_start},
+            default=datetime_parser),
         'application/json'
     )
