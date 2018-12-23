@@ -5,6 +5,8 @@ from django.db import models
 
 import matplotlib
 
+from lithopia_server.settings import BASE_DIR
+
 matplotlib.use('Agg')
 
 import dbsettings
@@ -40,6 +42,9 @@ class ApplicationSettings(dbsettings.Group):
 
 
 settings = ApplicationSettings("Core")
+
+sentinel_requests.DATA_PATH = os.path.join(BASE_DIR, sentinel_requests.DATA_PATH)
+sentinel_requests.credentials.CREDENTIALS_FILE = os.path.join(BASE_DIR, sentinel_requests.credentials.CREDENTIALS_FILE)
 
 
 
@@ -139,7 +144,7 @@ class RequestImage(models.Model):
     template_match_score = models.FloatField(default=0)
     diff_to_reference_score = models.TextField(default="") #json
 
-    IMAGES_DIR = 'request_images'
+    IMAGES_DIR = os.path.join(BASE_DIR, 'request_images')
     PROCESSED_DIR = os.path.join(IMAGES_DIR, "processed_raw")
     HISTOGRAM_DIR = os.path.join(IMAGES_DIR, "histogram")
     DIFF_DIR = os.path.join(IMAGES_DIR, "processed")
@@ -492,7 +497,7 @@ class RequestImage(models.Model):
 
 class ReferenceImage(models.Model):
     used_datasets = models.ManyToManyField(Dataset)
-    DIR = 'reference'
+    DIR = os.path.join(BASE_DIR, 'reference')
     marker_path = models.CharField(max_length=1000, default="")
     image_path = models.CharField(max_length=1000)
     name = models.CharField(max_length=100, unique=True)

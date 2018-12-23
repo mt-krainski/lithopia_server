@@ -1,3 +1,5 @@
+import os
+
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render
 from django.template import loader
@@ -8,10 +10,13 @@ from sentinel2 import credentials
 from core.models import Dataset, RequestImage, ReferenceImage, settings
 
 # Create your views here.
+from lithopia_server.settings import BASE_DIR
 
 TIMESTAMP_FORMAT = "%d.%m.%Y %H:%M:%S"
 USERNAME_TAG = "Copernicus_username"
 PASSWORD_TAG = "Copernicus_password"
+
+credentials.CREDENTIALS_FILE = os.path.join(BASE_DIR, credentials.CREDENTIALS_FILE)
 
 
 def home(request):
