@@ -174,6 +174,8 @@ class RequestImage(models.Model):
                 math.radians(270))[0]
         }
 
+        just_created = []
+
         for dataset in not_processed:
             t_function = sentinel_transform.transform_function(np.array(json.loads(dataset.transformation)))
             image = sentinel_images.get_tci_image(dataset.archive_path)
@@ -192,12 +194,20 @@ class RequestImage(models.Model):
                 processed_stamp = datetime.datetime.now(datetime.timezone.utc)
             )
             new_object.save()
-            new_object.process_metrics()
-            new_object.process_histogram()
-            new_object.diff_to_reference()
-            new_object.process_diff_plot()
-            new_object.get_diff_score()
-            new_object.process_marker_plot()
+            just_created.append(new_object)
+
+        for item in just_created:
+            item.process_extra_fields()
+
+        
+    def process_extra_fields(self):
+        self.process_metrics()
+        self.process_histogram()
+        self.diff_to_reference()
+        self.process_diff_plot()
+        self.get_diff_score()
+        self.process_marker_plot()
+
 
 
     @staticmethod
