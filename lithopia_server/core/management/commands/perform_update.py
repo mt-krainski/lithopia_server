@@ -3,11 +3,14 @@ from core import tasks
 import sys
 import psutil
 import subprocess
+import os
+
+from lithopia_server.settings import BASE_DIR
 
 PYTHON_PROCESS_KEYWORD = 'python'
 PROCESS_TASKS_KEYWORD = 'process_tasks'
 
-MANAGE_SCRIPT = "manage.py"
+MANAGE_SCRIPT = os.path.join(BASE_DIR, "manage.py")
 PROCESS_TASKS = "process_tasks"
 
 class Command(BaseCommand):
