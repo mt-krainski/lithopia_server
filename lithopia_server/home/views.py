@@ -20,12 +20,14 @@ def home(request):
         detected_last_stamp = detected[0].processed_stamp.strftime(TIMESTAMP_FORMAT)
     else:
         detected_last_stamp = None
+
+    processed_ratio = RequestImage.objects.count()/Dataset.objects.count()*100.0 if Dataset.objects.count()!=0 else 0
     context = {
         "datasets_len": Dataset.objects.count(),
         "processed_len": RequestImage.objects.count(),
         "detected_len": detected.count(),
         "detected_last_stamp": detected_last_stamp,
-        "processed_ratio": RequestImage.objects.count()/Dataset.objects.count()*100.0,
+        "processed_ratio": processed_ratio,
         "lat": settings.target_lat,
         "lon": settings.target_lon,
     }
