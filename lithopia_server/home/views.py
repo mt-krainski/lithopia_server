@@ -16,7 +16,10 @@ PASSWORD_TAG = "Copernicus_password"
 
 def home(request):
     detected = RequestImage.objects.filter(detected=True).order_by('-dataset__acquisition_time')
-    detected_last_stamp = detected[0].processed_stamp.strftime(TIMESTAMP_FORMAT)
+    if detected[0]:
+        detected_last_stamp = detected[0].processed_stamp.strftime(TIMESTAMP_FORMAT)
+    else:
+        detected_last_stamp = None
     context = {
         "datasets_len": Dataset.objects.count(),
         "processed_len": RequestImage.objects.count(),
