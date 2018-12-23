@@ -21,6 +21,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from mpl_toolkits.mplot3d import Axes3D
 from time import sleep
 import cv2
 
@@ -199,7 +200,7 @@ class RequestImage(models.Model):
         for item in just_created:
             item.process_extra_fields()
 
-        
+
     def process_extra_fields(self):
         self.process_metrics()
         self.process_histogram()
