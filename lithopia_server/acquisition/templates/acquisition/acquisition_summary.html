@@ -6,13 +6,36 @@
     <style>
     body {font-family:verdana;}
     td {text-align: center;}
+    .past {
+        font-style: italic;
+        color: lightgrey;
+    }
+    .rotate {
+      text-align: center;
+      white-space: nowrap;
+      vertical-align: middle;
+      width: 1.5em;
+    }
+    .rotate div {
+         -moz-transform: rotate(-90.0deg);  /* FF3.5+ */
+           -o-transform: rotate(-90.0deg);  /* Opera 10.5 */
+      -webkit-transform: rotate(-90.0deg);  /* Saf3.1+, Chrome */
+                 filter:  progid:DXImageTransform.Microsoft.BasicImage(rotation=0.083);  /* IE6,IE7 */
+             -ms-filter: "progid:DXImageTransform.Microsoft.BasicImage(rotation=0.083)"; /* IE8 */
+             margin-left: -10em;
+             margin-right: -10em;
+    }
     </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
 </head>
 <body>
 
-{% if future_acquisitions %}
+{% if future_acquisitions or past_acquisitions %}
     <table style="width: 90%; max-width: 1000px">
         <tr>
+            <th>
+
+            </th>
             <th>
                 Satellite
             </th>
@@ -27,12 +50,16 @@
             </th>
         </tr>
         <tr>
-            <td colspan="4" style="padding-top:10px; padding-bottom:10px;">
-                <b>Future Acquisitions</b>
-            </td>
         </tr>
         {% for acquisition in future_acquisitions %}
             <tr>
+                {% if forloop.counter == 1 %}
+                    <td class="rotate" rowspan = {{future_total_rows}}>
+                        <div>
+                            <b>Future Acquisitions</b>
+                        </div>
+                    </td>
+                {% endif %}
                 <td>
                     {{ acquisition.satellite }}
                 </td>
@@ -46,14 +73,25 @@
                     {{ acquisition.observation_time_stop|date:'Y-m-d H:i' }}
                 </td>
             </tr>
+            {% if forloop.last %}
+                {% for row in future_additional_rows_range %}
+                <tr>
+                    <td>--</td><td>--</td><td>--</td><td>--</td>
+                </tr>
+                {% endfor %}
+            {% endif %}
         {% endfor %}
-        <tr style="color: lightgrey">
-            <td colspan="4" style="padding-top:20px; padding-bottom:20px;">
-                <b>Past Acquisitions</b>
-            </td>
-        </tr>
+
+
         {% for acquisition in past_acquisitions %}
-            <tr style="font-style: italic; color: lightgrey">
+            <tr class="past">
+                {% if forloop.first %}
+                    <td class="rotate" rowspan="{{past_total_rows}}">
+                        <div>
+                            <b>Past Acquisitions</b>
+                        </div>
+                    </td>
+                {% endif %}
                 <td>
                     {{ acquisition.satellite }}
                 </td>
@@ -67,6 +105,13 @@
                     {{ acquisition.observation_time_stop|date:'Y-m-d H:i' }}
                 </td>
             </tr>
+            {% if forloop.last %}
+                {% for row in past_additional_rows_range %}
+                <tr class="past">
+                    <td>--</td><td>--</td><td>--</td><td>--</td>
+                </tr>
+                {% endfor %}
+            {% endif %}
         {% endfor %}
     </table>
 {% else %}
