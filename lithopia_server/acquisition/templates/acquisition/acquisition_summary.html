@@ -10,7 +10,7 @@
 </head>
 <body>
 
-{% if acquisition_list %}
+{% if future_acquisitions %}
     <table style="width: 90%; max-width: 1000px">
         <tr>
             <th>
@@ -26,22 +26,48 @@
                 Acquisition End
             </th>
         </tr>
-    {% for acquisition in acquisition_list %}
         <tr>
-            <td>
-                {{ acquisition.satellite }}
-            </td>
-            <td>
-                {{ acquisition.name }}
-            </td>
-            <td>
-                {{ acquisition.observation_time_start|date:'Y-m-d H:i' }}
-            </td>
-            <td>
-                {{ acquisition.observation_time_stop|date:'Y-m-d H:i' }}
+            <td colspan="4" style="padding-top:10px; padding-bottom:10px;">
+                <b>Future Acquisitions</b>
             </td>
         </tr>
-    {% endfor %}
+        {% for acquisition in future_acquisitions %}
+            <tr>
+                <td>
+                    {{ acquisition.satellite }}
+                </td>
+                <td>
+                    {{ acquisition.name }}
+                </td>
+                <td>
+                    {{ acquisition.observation_time_start|date:'Y-m-d H:i' }}
+                </td>
+                <td>
+                    {{ acquisition.observation_time_stop|date:'Y-m-d H:i' }}
+                </td>
+            </tr>
+        {% endfor %}
+        <tr style="color: lightgrey">
+            <td colspan="4" style="padding-top:20px; padding-bottom:20px;">
+                <b>Past Acquisitions</b>
+            </td>
+        </tr>
+        {% for acquisition in past_acquisitions %}
+            <tr style="font-style: italic; color: lightgrey">
+                <td>
+                    {{ acquisition.satellite }}
+                </td>
+                <td>
+                    {{ acquisition.name }}
+                </td>
+                <td>
+                    {{ acquisition.observation_time_start|date:'Y-m-d H:i' }}
+                </td>
+                <td>
+                    {{ acquisition.observation_time_stop|date:'Y-m-d H:i' }}
+                </td>
+            </tr>
+        {% endfor %}
     </table>
 {% else %}
     <p>No acquisition data is available.</p>

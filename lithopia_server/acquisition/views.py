@@ -14,11 +14,17 @@ def datetime_parser(o):
         return o.isoformat()
 
 def acquisition_page(request):
+    past_acquisitions = Acquisition.objects\
+        .filter(observation_time_start__lt=datetime.now().replace(tzinfo=utc))\
+        .order_by('observation_time_start')
+    future_acquisitions = Acquisition.objects\
+        .filter(observation_time_start__gt=datetime.now().replace(tzinfo=utc))\
+        .order_by('observation_time_start')
     return render(
         request,
       'acquisition/acquisition_summary.html',
-      {'acquisition_list':
-           Acquisition.objects.order_by('observation_time_start')})
+      {'future_acquisitions': future_acquisitions,
+       'past_acquisitions': past_acquisitions,})
 
 def earliest(request):
     earliest = Acquisition.objects\
