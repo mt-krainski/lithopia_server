@@ -67,10 +67,10 @@
                     {{ acquisition.name }}
                 </td>
                 <td>
-                    {{ acquisition.observation_time_start|date:'Y-m-d H:i' }}
+                    {{ acquisition.observation_time_start|date:'Y-m-d H:i UTC' }}
                 </td>
                 <td>
-                    {{ acquisition.observation_time_stop|date:'Y-m-d H:i' }}
+                    {{ acquisition.observation_time_stop|date:'Y-m-d H:i UTC' }}
                 </td>
             </tr>
             {% if forloop.last %}

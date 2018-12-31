@@ -34,13 +34,16 @@
     <p>
         <b>Target location</b>: {{ lat }}, {{ lon }}
     </p>
-    <p id="next_acq">
-        <b>Next acquisition</b>:
+    <p>
+        <b>Next acquisition</b>: <span id="next_acq">---</span>
     </p>
     <p>
-        <b>Latest entry</b>: <br>
-        <i>Acquisition</i>: <span id="acquisition_stamp"></span> <br>
-        <i>Ingestion</i>: <span id="ingestion_stamp"></span> <br>
+        <b>Latest entry in <a
+                href="https://scihub.copernicus.eu/"
+                target="_blank"
+                style="color: #404040; text-decoration: none; font-style: italic">
+            Copernicus Open Access Hub</a></b>:<br>
+        <span id="acquisition_stamp">---</span> (<i><span id="ingestion_stamp">---</span></i>)
 
     </p>
     <p>
@@ -83,7 +86,7 @@
                 var seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
                 document.getElementById("next_acq").innerHTML =
-                               "<b>Next acquisition</b>: " + earliestAcquisition.toUTCString() + " " +
+                               earliestAcquisition.toUTCString().replace("GMT", "UTC") + " " +
                                "(in " + (days>0 ? days + "d ": "") +
                                (days>0 || hours>0 ? hours + "h ": "") +
                                (days>0 || hours>0 || minutes>0 ? minutes + "m ": "") +
@@ -99,8 +102,8 @@
                responseJson = JSON.parse(xhttp.responseText);
                acquisitionTime = new Date(responseJson.stamp_acquisition);
                ingestionTime = new Date(responseJson.stamp_ingestion);
-               document.getElementById("acquisition_stamp").innerHTML = acquisitionTime.toUTCString();
-               document.getElementById("ingestion_stamp").innerHTML = ingestionTime.toUTCString();
+               document.getElementById("acquisition_stamp").innerHTML = acquisitionTime.toUTCString().replace("GMT", "UTC");
+               document.getElementById("ingestion_stamp").innerHTML = ingestionTime.toUTCString().replace("GMT", "UTC");
             }
         };
         xhttp.open("GET", "summary/latest_entry_stamp", true);
