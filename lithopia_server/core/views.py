@@ -21,8 +21,10 @@ import json
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from django.contrib.admin.views.decorators import staff_member_required
 from background_task.models import Task
+from sentinel2 import sentinel_requests
 
 HTML_DATE_FORMAT = '%d.%m.%Y %H:%M:%S'
+ENTRY_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
 def summary(request, id=0):
     template = loader.get_template('core/summary.html')
@@ -73,6 +75,31 @@ def get_special_image(request, image_type, name):
         return response
     else:
         return None
+
+
+def get_latest_entry_stamp(request):
+    location = (settings.target_lat, settings.target_lon)
+    response = sentinel_requests.get_latest(location)
+    latest_entry = sentinel_requests.get_entries(response)[0]
+    stamp = {}
+
+    for item in latest_entry['date']:
+        if item['name']=='datatakesensingstart':
+            datetime_stamp = datetime.strptime(
+                    item['content'],
+                    ENTRY_DATE_FORMAT)
+            stamp['stamp_acquisition'] = datetime_stamp.strftime(HTML_DATE_FORMAT)
+
+
+        elif item['name']=='ingestiondate':
+            datetime_stamp = datetime.strptime(
+                item['content'],
+                ENTRY_DATE_FORMAT)
+
+            stamp['stamp_ingestion'] = datetime_stamp.strftime(HTML_DATE_FORMAT)
+
+    return HttpResponse(json.dumps(stamp), 'application/json')
+
 
 
 @staff_member_required
