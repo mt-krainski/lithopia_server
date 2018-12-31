@@ -41,7 +41,6 @@ def summary(request, id=0):
         'cloud_cover': f"{round(summary_object.dataset.cloud_cover, 2)} %",
         'metrics': json.loads(summary_object.statistic_metrics),
         'marker_score': summary_object.template_match_score,
-        'diff_score': json.loads(summary_object.diff_to_reference_score),
     }, request))
 
 
