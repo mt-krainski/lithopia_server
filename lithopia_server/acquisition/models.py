@@ -28,7 +28,7 @@ class Acquisition(models.Model):
         location = (settings.target_lat, settings.target_lon)
 
         for placemark in placemarks:
-            if placemark.is_point_in_polygon(location):
+            if placemark.is_point_in_polygon(lat=settings.target_lat, lon=settings.target_lon):
                 matching_acquisitions.append(placemark)
 
         for acq in matching_acquisitions:

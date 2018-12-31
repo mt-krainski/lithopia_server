@@ -1,7 +1,7 @@
 django
 django-background-tasks
 -e git+https://github.com/zlorf/django-dbsettings.git#egg=dbsettings-0.10.0
--e git+https://github.com/mt-krainski/lithopia_scanner.git#egg=sentinel2-0.13
+-e git+https://github.com/mt-krainski/lithopia_scanner.git#egg=sentinel2-0.14
 psutil
 gunicorn
 psycopg2-binary
