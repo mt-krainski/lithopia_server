@@ -8,5 +8,5 @@ urlpatterns = [
     path('get_image/<str:name>', views.get_image, name='get_image'),
     path('special_image/<str:image_type>/<str:name>', views.get_special_image, name='special_image'),
     path('create_reference', views.create_reference, name='create_reference'),
-    path('get_latest_entry_stamp', views.get_latest_entry_stamp, name='get_latest_entry_stamp'),
+    path('latest_entry_stamp', views.get_latest_entry_stamp, name='latest_entry_stamp'),
 ]

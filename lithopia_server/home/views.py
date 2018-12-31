@@ -12,7 +12,8 @@ from core.models import Dataset, RequestImage, ReferenceImage, settings
 # Create your views here.
 from lithopia_server.settings import BASE_DIR
 
-TIMESTAMP_FORMAT = "%d.%m.%Y %H:%M:%S"
+# TIMESTAMP_FORMAT = "%d.%m.%Y %H:%M:%S"
+TIMESTAMP_FORMAT = HTML_DATE_FORMAT = '%a, %d %b %Y %H:%M:%S %Z'
 USERNAME_TAG = "Copernicus_username"
 PASSWORD_TAG = "Copernicus_password"
 
@@ -29,6 +30,7 @@ def home(request):
     processed_ratio = RequestImage.objects.count()/Dataset.objects.count()*100.0 if Dataset.objects.count()!=0 else 0
     context = {
         "datasets_len": Dataset.objects.count(),
+        "latest_dataset_stamp": Dataset.objects.order_by('-acquisition_time')[0].acquisition_time.strftime(TIMESTAMP_FORMAT),
         "processed_len": RequestImage.objects.count(),
         "detected_len": detected.count(),
         "detected_last_stamp": detected_last_stamp,

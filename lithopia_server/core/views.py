@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 
 import cv2
 
@@ -24,6 +24,7 @@ from background_task.models import Task
 from sentinel2 import sentinel_requests
 
 HTML_DATE_FORMAT = '%d.%m.%Y %H:%M:%S'
+# HTML_DATE_FORMAT = '%a, %d %b %Y %H:%M:%S %Z'
 ENTRY_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
 def summary(request, id=0):
@@ -76,6 +77,10 @@ def get_special_image(request, image_type, name):
         return None
 
 
+def datetime_parser(o):
+    if isinstance(o, (date, datetime)):
+        return o.isoformat()
+
 def get_latest_entry_stamp(request):
     location = (settings.target_lat, settings.target_lon)
     response = sentinel_requests.get_latest(location)
@@ -84,20 +89,16 @@ def get_latest_entry_stamp(request):
 
     for item in latest_entry['date']:
         if item['name']=='datatakesensingstart':
-            datetime_stamp = datetime.strptime(
+            stamp['stamp_acquisition'] = datetime.strptime(
                     item['content'],
-                    ENTRY_DATE_FORMAT)
-            stamp['stamp_acquisition'] = datetime_stamp.strftime(HTML_DATE_FORMAT)
-
+                    ENTRY_DATE_FORMAT).replace(tzinfo=utc)
 
         elif item['name']=='ingestiondate':
-            datetime_stamp = datetime.strptime(
+            stamp['stamp_ingestion'] = datetime.strptime(
                 item['content'],
-                ENTRY_DATE_FORMAT)
+                ENTRY_DATE_FORMAT).replace(tzinfo=utc)
 
-            stamp['stamp_ingestion'] = datetime_stamp.strftime(HTML_DATE_FORMAT)
-
-    return HttpResponse(json.dumps(stamp), 'application/json')
+    return HttpResponse(json.dumps(stamp, default=datetime_parser), 'application/json')
 
 
 

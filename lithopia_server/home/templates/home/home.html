@@ -38,7 +38,13 @@
         <b>Next acquisition</b>:
     </p>
     <p>
-        <b>Registered</b> {{ datasets_len }} datasets
+        <b>Latest entry</b>: <br>
+        Acquisition: <span id="acquisition_stamp"></span> <br>
+        Ingestion: <span id="ingestion_stamp"></span> <br>
+
+    </p>
+    <p>
+        <b>Registered</b> {{ datasets_len }} datasets (last from: {{ latest_dataset_stamp }})
     </p>
     <p>
         <b>Processed</b> {{ processed_len }}/{{ datasets_len }} datasets ({{ processed_ratio | floatformat:2 }}%)
@@ -58,7 +64,7 @@
                        earliestAcquisition = new Date(JSON.parse(xhttp.responseText).earliest);
                     }
                 };
-                xhttp.open("GET", "acquisition/earliest", false);
+                xhttp.open("GET", "acquisition/earliest", true);
                 xhttp.send();
             } else {
                 var countdownDate = earliestAcquisition.getTime();
@@ -85,6 +91,21 @@
 
             }
         }, 100)
+
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+               // Typical action to be performed when the document is ready:
+               responseJson = JSON.parse(xhttp.responseText);
+               acquisitionTime = new Date(responseJson.stamp_acquisition);
+               ingestionTime = new Date(responseJson.stamp_ingestion);
+               document.getElementById("acquisition_stamp").innerHTML = acquisitionTime.toUTCString();
+               document.getElementById("ingestion_stamp").innerHTML = ingestionTime.toUTCString();
+            }
+        };
+        xhttp.open("GET", "summary/latest_entry_stamp", true);
+        xhttp.send();
+
     </script>
 
 </body>
