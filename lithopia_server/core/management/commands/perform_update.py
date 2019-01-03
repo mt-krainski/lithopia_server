@@ -4,6 +4,8 @@ import sys
 import psutil
 import subprocess
 import os
+import logging
+
 
 from lithopia_server.settings import BASE_DIR
 
@@ -35,14 +37,19 @@ class Command(BaseCommand):
 
         process_tasks = self.get_process_tasks()
 
-        if options['kill'] and process_tasks:
-            process_tasks.kill()
+        if options['kill']:
+            while process_tasks:
+                process_tasks.kill()
+                process_tasks = self.get_process_tasks()
+                
             tasks.clean_perform_update()
             return
 
         if options['reset'] or not process_tasks:
-            if process_tasks:
+
+            while process_tasks:
                 process_tasks.kill()
+                process_tasks = self.get_process_tasks()
 
             tasks.clean_perform_update()
             subprocess.Popen(
@@ -59,7 +66,13 @@ class Command(BaseCommand):
         ]
 
         for p_process in python_processes:
-            if p_process.exe() == sys.executable:
+            executable_name = [sys.executable]
+            version = ".".join((sys.version_info[0], sys.version_info[1]))
+            if version in executable_name[0]:
+                executable_name.append(executable_name[0].replace(version, ""))
+            else:
+                executable_name.append(executable_name[0]+version)
+            if p_process.exe() in executable_name:
                 if PROCESS_TASKS_KEYWORD in p_process.cmdline():
                     return p_process
 
