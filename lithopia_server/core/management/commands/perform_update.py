@@ -15,7 +15,7 @@ PROCESS_TASKS_KEYWORD = 'process_tasks'
 MANAGE_SCRIPT = os.path.join(BASE_DIR, "manage.py")
 PROCESS_TASKS = f"process_tasks --duration {3*60*60}" # run for 3h max, cronjob is scheduled every 2 hrs
 
-logging.basicConfig(filename='~/lithopia_server.log', filemode='a', format='%[(asctime)s] %(process)d - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+logging.basicConfig(format='%[(asctime)s] %(process)d - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
 
 class Command(BaseCommand):
     help = 'Resets the tasks responsible for running dataset updates'
