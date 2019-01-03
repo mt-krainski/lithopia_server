@@ -14,7 +14,7 @@ PROCESS_TASKS_KEYWORD = 'process_tasks'
 
 MANAGE_SCRIPT = os.path.join(BASE_DIR, "manage.py")
 PROCESS_TASKS = "process_tasks" # run for 3h max, cronjob is scheduled every 2 hrs
-PROCESS_TASKS_ARGS = f"duration {3*60*60}"
+PROCESS_TASKS_ARGS = ["--duration", f"{3*60*60}"]
 
 logging.basicConfig(format='[%(asctime)s] %(process)d - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
 
@@ -69,7 +69,7 @@ class Command(BaseCommand):
 
             logging.debug(f"Running '{sys.executable} {MANAGE_SCRIPT} {PROCESS_TASKS}'")
             subprocess.Popen(
-                [sys.executable, MANAGE_SCRIPT, PROCESS_TASKS, PROCESS_TASKS_ARGS],
+                [sys.executable, MANAGE_SCRIPT, PROCESS_TASKS] + PROCESS_TASKS_ARGS,
             )
 
         logging.debug(f"Adding task")
