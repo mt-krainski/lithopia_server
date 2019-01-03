@@ -67,10 +67,10 @@ class Command(BaseCommand):
             logging.debug(f"Performing clean update")
             tasks.clean_perform_update()
 
-            logging.debug(f"Running '{sys.executable} {MANAGE_SCRIPT} {PROCESS_TASKS}'")
-            subprocess.Popen(
-                [sys.executable, MANAGE_SCRIPT, PROCESS_TASKS] + PROCESS_TASKS_ARGS,
-            )
+            subprocess_command = [sys.executable, MANAGE_SCRIPT, PROCESS_TASKS] + PROCESS_TASKS_ARGS
+
+            logging.debug(f"Running '{' '.join(subprocess_command)}'")
+            subprocess.Popen(subprocess_command)
 
         logging.debug(f"Adding task")
 
