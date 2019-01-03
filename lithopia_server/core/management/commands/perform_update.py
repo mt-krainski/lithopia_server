@@ -41,7 +41,7 @@ class Command(BaseCommand):
             while process_tasks:
                 process_tasks.kill()
                 process_tasks = self.get_process_tasks()
-                
+
             tasks.clean_perform_update()
             return
 
@@ -67,7 +67,7 @@ class Command(BaseCommand):
 
         for p_process in python_processes:
             executable_name = [sys.executable]
-            version = ".".join((sys.version_info[0], sys.version_info[1]))
+            version = ".".join((str(sys.version_info[0]), str(sys.version_info[1])))
             if version in executable_name[0]:
                 executable_name.append(executable_name[0].replace(version, ""))
             else:
