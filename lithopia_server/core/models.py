@@ -98,6 +98,7 @@ class Dataset(models.Model):
                                     name=dataset_name,
                                 )
                                 db_entry.save()
+                                os.remove(archive_path)
                             if Dataset.objects.count() >= settings.initial_download_size:
                                 break
                 if Dataset.objects.count() >= settings.initial_download_size:
@@ -108,6 +109,12 @@ class Dataset(models.Model):
             settings.initial_download_running = False
             Dataset.remove_non_referenced()
 
+
+    @staticmethod
+    def remove_archives():
+        for item in Dataset.objects.all():
+            if os.path.exists(item.archive_path):
+                os.remove(item.archive_path)
 
     @staticmethod
     def remove_non_referenced():

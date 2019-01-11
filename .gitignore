@@ -6,3 +6,4 @@ lithopia_server/request_images/
 lithopia_server/reference/
 __pycache__/
 *.sqlite3
+src/**
