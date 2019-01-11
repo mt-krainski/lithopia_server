@@ -98,7 +98,8 @@ class Dataset(models.Model):
                                     name=dataset_name,
                                 )
                                 db_entry.save()
-                                os.remove(archive_path)
+                                if os.path.exists(archive_path):
+                                    os.remove(archive_path)
                             if Dataset.objects.count() >= settings.initial_download_size:
                                 break
                 if Dataset.objects.count() >= settings.initial_download_size:
