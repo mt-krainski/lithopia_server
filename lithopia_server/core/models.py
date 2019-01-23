@@ -1,4 +1,5 @@
 import datetime
+import logging
 
 from PIL import Image
 from django.db import models
@@ -40,6 +41,7 @@ class ApplicationSettings(dbsettings.Group):
     flag_color = dbsettings.TextValue(default='red')
     place = dbsettings.TextValue(default='balcony')
     update_task_timeout = dbsettings.DurationValue(default=datetime.timedelta(minutes=30))
+    processing_lock = dbsettings.BooleanValue(default=False)
 
 
 settings = ApplicationSettings("Core")
@@ -98,8 +100,6 @@ class Dataset(models.Model):
                                     name=dataset_name,
                                 )
                                 db_entry.save()
-                                if os.path.exists(archive_path):
-                                    os.remove(archive_path)
                             if Dataset.objects.count() >= settings.initial_download_size:
                                 break
                 if Dataset.objects.count() >= settings.initial_download_size:
@@ -115,7 +115,10 @@ class Dataset(models.Model):
     def remove_archives():
         for item in Dataset.objects.all():
             if os.path.exists(item.archive_path):
+                logging.debug(f"Removing {item.archive_path}")
                 os.remove(item.archive_path)
+            else:
+                logging.debug(f"Not found: {item.archive_path}")
 
     @staticmethod
     def remove_non_referenced():
