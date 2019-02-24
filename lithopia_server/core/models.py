@@ -278,6 +278,8 @@ class RequestImage(models.Model):
         ref_image = image_analysis.offset_image(ref_image, offset)
         cropped_ref_image = RequestImage.get_cropped_cv(ref_image)
         cropped_self_image = RequestImage.get_cropped_cv(self_image)
+        print(f"Cropped ref image: {cropped_ref_image.shape}")
+        print(f"Cropped self image: {cropped_self_image.shape}")
 
         diff = image_analysis.get_image_difference(
             cropped_ref_image,
